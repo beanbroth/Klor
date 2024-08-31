@@ -21,6 +21,7 @@ public class S_SpriteDamageController : MonoBehaviour
     // Debug
     private Vector3 lastWorldHitPosition;
     private Vector2 lastProjectedPosition;
+    //TODO: Why does this have to exist? Potentially due to camera vs gun offset, but not sure. Investigate.
     [SerializeField] private Vector2 offsetAdjustment;
 
     void Start()

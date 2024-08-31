@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class BaseWeaponController : MonoBehaviour
+public abstract class BaseWeaponController : PausableMonoBehaviour
 {
     [SerializeField] protected Transform bulletSpawnPoint;
     [SerializeField] protected GameObject bulletPrefab;

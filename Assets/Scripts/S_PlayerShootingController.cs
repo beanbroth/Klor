@@ -87,4 +87,10 @@ public class S_PlayerShootingController : BaseWeaponController
             rb.velocity = bullet.transform.forward * bulletSpeed;
         }
     }
+
+    protected override void OnPauseStateChanged(bool isPaused)
+    {
+        //disable this script update while game is paused
+        enabled = !isPaused;
+    }
 }

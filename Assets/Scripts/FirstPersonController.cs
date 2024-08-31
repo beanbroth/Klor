@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 #if ENABLE_INPUT_SYSTEM
 [RequireComponent(typeof(PlayerInput))]
 #endif
-public class FirstPersonController : MonoBehaviour
+public class FirstPersonController : PausableMonoBehaviour
 {
     [Header("Player")]
     [Tooltip("Move speed of the character in m/s")]
@@ -262,5 +262,11 @@ public class FirstPersonController : MonoBehaviour
 
         // when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
         Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+    }
+
+    protected override void OnPauseStateChanged(bool isPaused)
+    {
+        //disable this script update while game is paused
+        enabled = !isPaused;
     }
 }
