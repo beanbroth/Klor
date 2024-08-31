@@ -1,4 +1,4 @@
-Shader "Custom/BillboardSpriteWithMultipleDamageTypes"
+Shader "Custom/BillboardSpriteWithMultipleDamageTypesAndFlash"
 {
     Properties
     {
@@ -7,6 +7,8 @@ Shader "Custom/BillboardSpriteWithMultipleDamageTypes"
         _DamageTex2("Damage Texture 2", 2D) = "white" {}
         _DamageTex3("Damage Texture 3", 2D) = "white" {}
         _EnemyID("Enemy ID", Float) = 0
+        _FlashColor("Flash Color", Color) = (1,0,0,1)
+        _FlashIntensity("Flash Intensity", Range(0,1)) = 0
     }
         SubShader
         {
@@ -52,6 +54,8 @@ Shader "Custom/BillboardSpriteWithMultipleDamageTypes"
                 sampler2D _DamageTex3;
                 float4 _MainTex_ST;
                 float _EnemyID;
+                float4 _FlashColor;
+                float _FlashIntensity;
 
                 float extractYRotation(float4x4 mat)
                 {
@@ -145,7 +149,10 @@ Shader "Custom/BillboardSpriteWithMultipleDamageTypes"
                         }
                     }
 
-                    return fixed4(col.rgb, finalAlpha);
+                    // Apply flash effect
+                    fixed3 flashedColor = lerp(col.rgb, _FlashColor.rgb, _FlashIntensity);
+
+                    return fixed4(flashedColor, finalAlpha);
                 }
                 ENDCG
             }

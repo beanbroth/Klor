@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 
 public class S_DamageManager : MonoBehaviour
 {
@@ -30,11 +31,13 @@ public class S_DamageManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        InitializeDamageBuffer();
+
     }
 
     void Start()
     {
-        InitializeDamageBuffer();
     }
 
     void InitializeDamageBuffer()
@@ -59,7 +62,10 @@ public class S_DamageManager : MonoBehaviour
 
     void UpdateDamageBuffer()
     {
-        damageBuffer.SetData(damageData);
+        if (damageBuffer != null && damageData != null)
+        {
+            damageBuffer.SetData(damageData);
+        }
     }
 
     public int GetUniqueEnemyIndex()

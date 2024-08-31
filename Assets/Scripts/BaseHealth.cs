@@ -1,9 +1,14 @@
 using UnityEngine;
+using System;
 
 public abstract class BaseHealth : MonoBehaviour
 {
     [SerializeField] protected float maxHealth = 100f;
-    [SerializeField] [ReadOnly] protected float currentHealth;
+    [SerializeField][ReadOnly] protected float currentHealth;
+
+    // Events
+    public event Action<float> OnDamageTaken;
+    public event Action OnDeath;
 
     protected virtual void Start()
     {
@@ -12,10 +17,13 @@ public abstract class BaseHealth : MonoBehaviour
 
     public virtual void TakeDamage(float damage)
     {
-        Debug.Log("Taking damage ");
         currentHealth -= damage;
+        OnDamageTaken?.Invoke(damage);
+
         if (currentHealth <= 0)
         {
+            currentHealth = 0;
+            OnDeath?.Invoke();
             Die();
         }
     }
