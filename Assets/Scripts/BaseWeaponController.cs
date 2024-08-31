@@ -8,9 +8,11 @@ public abstract class BaseWeaponController : MonoBehaviour
     [SerializeField] protected float fireRate = 0.5f;
     [SerializeField] protected int maxAmmo = 30;
     [SerializeField] protected float reloadTime = 2f;
+    [SerializeField] protected bool isAutomatic = false;
 
-    protected int currentAmmo;
+    [SerializeField] [ReadOnly] protected int currentAmmo;
     protected float nextFireTime;
+    protected bool isFiring = false;
 
     protected virtual void Start()
     {
@@ -19,9 +21,19 @@ public abstract class BaseWeaponController : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (CanFire())
+        if (isAutomatic)
         {
-            Fire();
+            if (isFiring && CanFire())
+            {
+                Fire();
+            }
+        }
+        else
+        {
+            if (CanFire())
+            {
+                Fire();
+            }
         }
     }
 
@@ -52,5 +64,15 @@ public abstract class BaseWeaponController : MonoBehaviour
     protected virtual void FinishReload()
     {
         currentAmmo = maxAmmo;
+    }
+
+    public virtual void StartFiring()
+    {
+        isFiring = true;
+    }
+
+    public virtual void StopFiring()
+    {
+        isFiring = false;
     }
 }

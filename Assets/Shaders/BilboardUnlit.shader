@@ -1,65 +1,75 @@
-Shader "Custom/BillboardWithUprightSprite"
+Shader "Custom/BillboardSpriteWithMultipleDamage"
 {
     Properties
     {
-       _MainTex("Texture Image", 2D) = "white" {}
+        _MainTex("Sprite Texture", 2D) = "white" {}
+        _DamageTex("Damage Texture", 2D) = "white" {}
     }
-    SubShader
+        SubShader
     {
         Tags {"Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"}
+        LOD 100
+
         ZWrite Off
         Blend SrcAlpha OneMinusSrcAlpha
-        Cull Off // Disable culling to render both sides
+        Cull Off
+
         Pass
         {
             CGPROGRAM
-            #pragma vertex vert  
+            #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
 
-            uniform sampler2D _MainTex;
-
-            struct vertexInput
+            struct appdata
             {
                 float4 vertex : POSITION;
-                float4 tex : TEXCOORD0;
+                float2 uv : TEXCOORD0;
             };
-            struct vertexOutput
+
+            struct v2f
             {
-                float4 pos : SV_POSITION;
-                float4 tex : TEXCOORD0;
+                float2 uv : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+            };
+
+            struct DamageInfo
+            {
+                float4 positionAndType; // xy = position, z = damage type, w = rotation
+                float scale;
+            };
+
+            sampler2D _MainTex;
+            sampler2D _DamageTex;
+            float4 _MainTex_ST;
+
+            // Constants for three damage instances
+            static const DamageInfo DAMAGE_INSTANCES[3] = {
+                { float4(0.3, 0.3, 0, 0), 0.15 },  // Bottom-left
+                { float4(0.7, 0.7, 0, 0.785), 0.2 },  // Top-right, rotated 45 degrees
+                { float4(0.5, 0.5, 0, 1.57), 0.25 }   // Center, rotated 90 degrees
             };
 
             float extractYRotation(float4x4 mat)
             {
-                // Extract Y rotation from the matrix
                 return atan2(mat._m02, mat._m22);
             }
 
             float extractZRotation(float4x4 mat)
             {
-                // Extract only the Z rotation, ignoring X and Y
                 return atan2(mat._m01, mat._m00);
             }
 
-            vertexOutput vert(vertexInput input)
+            v2f vert(appdata v)
             {
-                vertexOutput output;
-
-                // Extract local scale from object-to-world matrix
+                v2f o;
                 float3 scale = float3(
                     length(unity_ObjectToWorld._m00_m10_m20),
                     length(unity_ObjectToWorld._m01_m11_m21),
                     length(unity_ObjectToWorld._m02_m12_m22)
                 );
-
-                // Extract Y rotation
                 float worldYRotation = extractYRotation(unity_ObjectToWorld);
-
-                // Extract only Z rotation
                 float localZRotation = extractZRotation(unity_ObjectToWorld);
-
-                // Create rotation matrix for local Z rotation only
                 float cosZ = cos(localZRotation);
                 float sinZ = sin(localZRotation);
                 float3x3 localRotationMatrix = float3x3(
@@ -68,48 +78,64 @@ Shader "Custom/BillboardWithUprightSprite"
                     0, 0, 1
                 );
 
-                // Billboard calculation
                 float3 worldPos = unity_ObjectToWorld._m03_m13_m23;
                 float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
                 float3 upDir = float3(0, 1, 0);
                 float3 rightDir = normalize(cross(upDir, viewDir));
 
-                // Normalize the Y rotation to be between 0 and 2π
                 worldYRotation = fmod(worldYRotation + 2 * UNITY_PI, 2 * UNITY_PI);
-
-                // Check if the world Y rotation is between 90 and 270 degrees
                 if (worldYRotation > UNITY_PI / 2 && worldYRotation < 3 * UNITY_PI / 2)
                 {
-                    // Flip the right direction
                     rightDir = -rightDir;
                 }
-
                 upDir = normalize(cross(viewDir, rightDir));
 
-                // Apply scale and Z rotation to local vertex position
-                float3 vertexOffset = mul(localRotationMatrix, input.vertex.xyz * scale);
-
-                // Apply billboard orientation
+                float3 vertexOffset = mul(localRotationMatrix, v.vertex.xyz * scale);
                 float3 worldOffset = rightDir * vertexOffset.x + upDir * vertexOffset.y + viewDir * vertexOffset.z;
-
                 float3 billboardPos = worldPos + worldOffset;
-                output.pos = UnityWorldToClipPos(billboardPos);
-                output.tex = input.tex;
 
-                // Remove the UV flipping
-                // if (worldYRotation > UNITY_PI / 2 && worldYRotation < 3 * UNITY_PI / 2)
-                // {
-                //     output.tex.x = 1 - output.tex.x;
-                // }
-
-                return output;
+                o.vertex = UnityWorldToClipPos(billboardPos);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                return o;
             }
 
-            float4 frag(vertexOutput input) : COLOR
+            float2 rotateUV(float2 uv, float rotation)
             {
-                return tex2D(_MainTex, float2(input.tex.xy));
+                float s = sin(rotation);
+                float c = cos(rotation);
+                float2 pivot = float2(0.5, 0.5);
+                return float2(
+                    c * (uv.x - pivot.x) - s * (uv.y - pivot.y) + pivot.x,
+                    s * (uv.x - pivot.x) + c * (uv.y - pivot.y) + pivot.y
+                );
             }
-            ENDCG
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+                fixed4 col = tex2D(_MainTex, i.uv);
+
+            // Apply damage for each instance
+            for (int j = 0; j < 3; j++)
+            {
+                DamageInfo damage = DAMAGE_INSTANCES[j];
+                float2 damagePos = damage.positionAndType.xy;
+                float damageRotation = damage.positionAndType.w;
+                float damageScale = damage.scale;
+
+                float2 damageUV = (i.uv - damagePos) / damageScale;
+                damageUV = rotateUV(damageUV, damageRotation);
+
+                if (all(damageUV >= 0 && damageUV <= 1))
+                {
+                    fixed4 damageTexture = tex2D(_DamageTex, damageUV);
+                    col.rgb = lerp(col.rgb, damageTexture.rgb, damageTexture.a);
+                    col.a = lerp(col.a, 0, damageTexture.a); // Reduce alpha where damage is applied
+                }
+            }
+
+            return col;
         }
+        ENDCG
+    }
     }
 }
