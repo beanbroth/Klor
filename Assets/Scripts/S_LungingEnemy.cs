@@ -3,19 +3,23 @@ using UnityEngine;
 
 public class S_LungingEnemy : BaseEnemyMovementController
 {
-    [SerializeField] private float lungeRange = 5f;
-    [SerializeField] private float lungeDistance = 5f; // New variable for lunge distance
-    [SerializeField] private float lungeSpeed = 10f;
+    [SerializeField] private float lungeInitiateRange = 5f;
+    [SerializeField] private float lungeMaxDuration = 1f;
     [SerializeField] private float chargeUpDuration = 0.8f;
-    [SerializeField] private float lungeHeight = 2f; // Maximum height of the arc
+    [SerializeField] private float initialHorizontalLungeVelocity = 10f;
+    [SerializeField] private float initialVerticalLungeVelocity = 5f;
+    [SerializeField] private SO_Float gravity;
 
     private bool isCharging = false;
     private bool isLunging = false;
+    private bool isGrounded = true;
+    private Coroutine lungeCoroutine;
 
     protected override void Update()
     {
+        if (isDead) return;
         base.Update();
-        if (!isStunned && !isCharging && !isLunging)
+        if (!isStunned && !isCharging && !isLunging && isGrounded)
         {
             CheckForLunge();
         }
@@ -23,10 +27,19 @@ public class S_LungingEnemy : BaseEnemyMovementController
 
     private void CheckForLunge()
     {
-        if (Vector3.Distance(transform.position, player.position) <= lungeRange)
+        if (Vector3.Distance(transform.position, player.position) <= lungeInitiateRange)
         {
-            StartCoroutine(LungeRoutine());
+            StartLunge();
         }
+    }
+
+    private void StartLunge()
+    {
+        if (lungeCoroutine != null)
+        {
+            StopCoroutine(lungeCoroutine);
+        }
+        lungeCoroutine = StartCoroutine(LungeRoutine());
     }
 
     private IEnumerator LungeRoutine()
@@ -35,55 +48,93 @@ public class S_LungingEnemy : BaseEnemyMovementController
         agent.isStopped = true;
 
         // Charge up
-        yield return new WaitForSeconds(chargeUpDuration);
+        float chargeTimer = 0f;
+        while (chargeTimer < chargeUpDuration)
+        {
+            chargeTimer += Time.deltaTime;
+            yield return null;
+        }
 
         isCharging = false;
         isLunging = true;
+        isGrounded = false;
 
-        // Calculate lunge direction and end position
         Vector3 startPosition = transform.position;
         Vector3 directionToPlayer = (player.position - startPosition).normalized;
-        Vector3 endPosition = startPosition + directionToPlayer * lungeDistance;
-
-        // Calculate lunge duration based on distance and speed
-        float lungeDuration = lungeDistance / lungeSpeed;
+        Vector3 initialHorizontalVelocity = directionToPlayer * initialHorizontalLungeVelocity;
+        Vector3 initialVelocity = initialHorizontalVelocity + Vector3.up * initialVerticalLungeVelocity;
 
         float elapsedTime = 0f;
-        while (elapsedTime < lungeDuration)
+        bool hasReachedApex = false;
+
+        while (elapsedTime < lungeMaxDuration && !isGrounded)
         {
-            float t = elapsedTime / lungeDuration;
+            Vector3 currentPosition = CalculatePosition(startPosition, initialVelocity, elapsedTime);
 
-            // Calculate the current position along the path
-            Vector3 currentPosition = Vector3.Lerp(startPosition, endPosition, t);
+            if (!hasReachedApex && currentPosition.y < transform.position.y)
+            {
+                hasReachedApex = true;
+            }
 
-            // Add vertical displacement for the arc
-            float heightOffset = Mathf.Sin(t * Mathf.PI) * lungeHeight;
-            currentPosition.y += heightOffset;
+            if (hasReachedApex && currentPosition.y <= startPosition.y)
+            {
+                currentPosition.y = startPosition.y;
+                isGrounded = true;
+            }
 
-            // Move to the calculated position
             transform.position = currentPosition;
-
             elapsedTime += Time.deltaTime;
             yield return null;
         }
 
-        // Ensure the enemy lands exactly at the end position
-        transform.position = endPosition;
-
-        isLunging = false;
-        agent.isStopped = false;
+        CompleteLunge();
     }
 
-    protected override void HandleDamageTaken(float damage)
+    private void CompleteLunge()
     {
-        base.HandleDamageTaken(damage);
-        // Interrupt charging or lunging when damaged
-        if (isCharging || isLunging)
+        isLunging = false;
+        isGrounded = true;
+        agent.isStopped = false;
+
+        if (isDead)
         {
-            StopAllCoroutines();
-            isCharging = false;
-            isLunging = false;
-            agent.isStopped = false;
+            DisableAI();
         }
+        else if (Vector3.Distance(transform.position, player.position) > 0.5f)
+        {
+            agent.SetDestination(player.position);
+        }
+    }
+
+    private Vector3 CalculatePosition(Vector3 startPos, Vector3 initialVelocity, float time)
+    {
+        return startPos + initialVelocity * time + 0.5f * gravity.Value * Vector3.up * time * time;
+    }
+
+    protected override void HandleDamageTaken(DamageInfo damageInfo)
+    {
+        base.HandleDamageTaken(damageInfo);
+
+        if (damageInfo.isKillingBlow)
+        {
+            isDead = true;
+            DisableAI();
+
+            // Don't interrupt the lunge if it's ongoing
+            if (!isLunging && !isCharging)
+            {
+            }
+        }
+    }
+
+    private void DisableAI()
+    {
+        if (lungeCoroutine != null)
+        {
+            StopCoroutine(lungeCoroutine);
+        }
+        agent.isStopped = true;
+        this.enabled = false;
+        // Add any other necessary AI disabling logic here
     }
 }
