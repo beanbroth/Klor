@@ -49,6 +49,30 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DamageTex:
+        m_Texture: {fileID: 2800000, guid: 751aa1b6637101946b2fdbb7aa27d6ad, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DamageTex1:
+        m_Texture: {fileID: 2800000, guid: 4ab98944c25492b4eb9a6b8be53798a1, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DamageTex2:
+        m_Texture: {fileID: 2800000, guid: 29f18f50fc92de245a303737219be828, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DamageTex3:
+        m_Texture: {fileID: 2800000, guid: 22029013aa87e3f488da7a6c04cefc03, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DamageTexArray0:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DamageTexArray1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -161,6 +185,8 @@ Material:
     - _StencilReadMask: 315.7
     - _StencilWriteMask: 339.6
     - _Surface: 0
+    - _TextureCount0: 1
+    - _TextureCount1: 1
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
