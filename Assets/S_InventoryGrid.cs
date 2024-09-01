@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using UnityEditor;
 #endif
 
-public class S_InventoryGrid : MonoBehaviour
+public class S_InventoryGrid : MonoBehaviour, IInventorySlot
 {
     public int width = 7;
     public int height = 9;
@@ -20,8 +20,10 @@ public class S_InventoryGrid : MonoBehaviour
     [SerializeField] private Transform itemsParent;
 
     // Variables for highlighting
+    [SerializeField] private Color baseSlotColor = Color.gray;
     [SerializeField] private Color validPlacementColor = new Color(0, 1, 0, 0.5f);
     [SerializeField] private Color invalidPlacementColor = new Color(1, 0, 0, 0.5f);
+
     private List<Image> highlightedCells = new List<Image>();
 
     public RectTransform RectTransform => gridRectTransform;
@@ -85,6 +87,7 @@ public class S_InventoryGrid : MonoBehaviour
                 RectTransform cellRect = cell.GetComponent<RectTransform>();
                 if (cellRect != null)
                 {
+                    cellRect.GetComponent<Image>().color = baseSlotColor;
                     cellRect.pivot = new Vector2(0, 1);
                     cellRect.anchorMin = new Vector2(0, 1);
                     cellRect.anchorMax = new Vector2(0, 1);
@@ -110,16 +113,16 @@ public class S_InventoryGrid : MonoBehaviour
         items.Clear();
     }
 
-    public bool CanPlaceItem(SO_InventoryItemData itemData, int x, int y, S_InventoryItem ignoredItem = null)
+    public bool CanPlaceItem(S_InventoryItem item, int x, int y, S_InventoryItem ignoredItem = null)
     {
-        if (x < 0 || y < 0 || x + itemData.Width > width || y + itemData.Height > height)
+        if (x < 0 || y < 0 || x + item.CurrentWidth > width || y + item.CurrentHeight > height)
             return false;
 
-        for (int i = 0; i < itemData.Width; i++)
+        for (int i = 0; i < item.CurrentWidth; i++)
         {
-            for (int j = 0; j < itemData.Height; j++)
+            for (int j = 0; j < item.CurrentHeight; j++)
             {
-                if (itemData.Shape[i, j])
+                if (item.CurrentShape[i, j])
                 {
                     if (IsOccupied(x + i, y + j, ignoredItem))
                         return false;
@@ -135,45 +138,33 @@ public class S_InventoryGrid : MonoBehaviour
         {
             if (item == ignoredItem) continue; // Skip the item being dragged
 
-            if (item.GridX <= x && x < item.GridX + item.ItemData.Width &&
-                item.GridY <= y && y < item.GridY + item.ItemData.Height)
+            if (item.GridX <= x && x < item.GridX + item.CurrentWidth &&
+                item.GridY <= y && y < item.GridY + item.CurrentHeight)
             {
-                if (item.ItemData.Shape[x - item.GridX, y - item.GridY])
+                if (item.CurrentShape[x - item.GridX, y - item.GridY])
                     return true;
             }
         }
         return false;
     }
 
-    public void PlaceItem(SO_InventoryItemData itemData, int x, int y)
+    public void PlaceItem(S_InventoryItem item, int x, int y)
     {
-        if (CanPlaceItem(itemData, x, y))
+        if (CanPlaceItem(item, x, y))
         {
-            GameObject itemObject = new GameObject(itemData.itemName);
-            itemObject.transform.SetParent(itemsParent, false);
-
-            RectTransform rectTransform = itemObject.AddComponent<RectTransform>();
-            rectTransform.pivot = new Vector2(0, 1);
-            rectTransform.anchorMin = new Vector2(0, 1);
-            rectTransform.anchorMax = new Vector2(0, 1);
-
-            S_InventoryItem newItem = itemObject.AddComponent<S_InventoryItem>();
-            newItem.Initialize(itemData, x, y, cellSize);
-
-            rectTransform.anchoredPosition = new Vector2(x * cellSize, -y * cellSize);
-            rectTransform.sizeDelta = new Vector2(itemData.Width * cellSize, itemData.Height * cellSize);
-
-            items.Add(newItem);
+            item.UpdatePosition(x, y);
+            items.Add(item);
         }
     }
 
-    public void RemoveItem(S_InventoryItem item)
+    public bool RemoveItem(S_InventoryItem item)
     {
         items.Remove(item);
         DestroyImmediate(item.gameObject);
+        return true;
     }
 
-    public void HandleItemDrag(S_InventoryItem item, Vector2 position)
+    public bool HandleItemDrag(S_InventoryItem item, Vector2 position)
     {
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             gridRectTransform,
@@ -182,10 +173,16 @@ public class S_InventoryGrid : MonoBehaviour
             out Vector2 localPoint
         );
 
+        // Adjust localPoint to represent the center of the slot
+        localPoint.x -= cellSize / 2;
+        localPoint.y += cellSize / 2;
+
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
 
-        HighlightCells(item.ItemData, gridX, gridY, item);
+        HighlightCells(item, gridX, gridY);
+
+        return true;
     }
 
     public bool HandleItemDrop(S_InventoryItem item, Vector2 position)
@@ -197,16 +194,21 @@ public class S_InventoryGrid : MonoBehaviour
             out Vector2 localPoint
         );
 
+        // Adjust localPoint to represent the center of the slot
+        localPoint.x -= cellSize / 2;
+        localPoint.y += cellSize / 2;
+
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
 
-        if (CanPlaceItem(item.ItemData, gridX, gridY, item))
+        if (CanPlaceItem(item, gridX, gridY, item))
         {
+            item.transform.SetParent(itemsParent);
             // Remove the item from its original position
             items.Remove(item);
 
             // Update the item's position
-            item.UpdatePosition(gridX, gridY, cellSize);
+            item.UpdatePosition(gridX, gridY);
 
             // Add the item back to the list at its new position
             items.Add(item);
@@ -219,18 +221,19 @@ public class S_InventoryGrid : MonoBehaviour
         return false;
     }
 
-    private void HighlightCells(SO_InventoryItemData itemData, int x, int y, S_InventoryItem ignoredItem)
+
+    private void HighlightCells(S_InventoryItem item, int x, int y)
     {
         ClearHighlight();
 
-        bool canPlace = CanPlaceItem(itemData, x, y, ignoredItem);
+        bool canPlace = CanPlaceItem(item, x, y, item);
         Color highlightColor = canPlace ? validPlacementColor : invalidPlacementColor;
 
-        for (int i = 0; i < itemData.Width; i++)
+        for (int i = 0; i < item.CurrentWidth; i++)
         {
-            for (int j = 0; j < itemData.Height; j++)
+            for (int j = 0; j < item.CurrentHeight; j++)
             {
-                if (itemData.Shape[i, j])
+                if (item.CurrentShape[i, j])
                 {
                     int cellX = x + i;
                     int cellY = y + j;
@@ -250,7 +253,7 @@ public class S_InventoryGrid : MonoBehaviour
     {
         foreach (var cell in highlightedCells)
         {
-            cell.color = Color.white; // Or whatever the default color is
+            cell.color = baseSlotColor;
         }
         highlightedCells.Clear();
     }
@@ -268,9 +271,19 @@ public class S_InventoryGrid : MonoBehaviour
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
 
-        if (CanPlaceItem(itemToPlace, gridX, gridY))
+        GameObject itemObject = new GameObject(itemToPlace.itemName);
+        itemObject.transform.SetParent(itemsParent, false);
+
+        S_InventoryItem newItem = itemObject.AddComponent<S_InventoryItem>();
+        newItem.Initialize(itemToPlace, gridX, gridY, cellSize);
+
+        if (CanPlaceItem(newItem, gridX, gridY))
         {
-            PlaceItem(itemToPlace, gridX, gridY);
+            PlaceItem(newItem, gridX, gridY);
+        }
+        else
+        {
+            DestroyImmediate(itemObject);
         }
     }
 
@@ -288,21 +301,61 @@ public class S_InventoryGrid : MonoBehaviour
             RemoveItem(items[i]);
         }
 
-        // Top-left corner of the grid
-        if (CanPlaceItem(testItemData, 0, 0))
-            PlaceItem(testItemData, 0, 0);
+        // Create and place test items in corners
+        PlaceTestItem(0, 0);
+        PlaceTestItem(width - testItemData.Width, 0);
+        PlaceTestItem(0, height - testItemData.Height);
+        PlaceTestItem(width - testItemData.Width, height - testItemData.Height);
+    }
 
-        // Top-right corner of the grid
-        if (CanPlaceItem(testItemData, width - testItemData.Width, 0))
-            PlaceItem(testItemData, width - testItemData.Width, 0);
+    private void PlaceTestItem(int x, int y)
+    {
+        GameObject itemObject = new GameObject(testItemData.itemName);
+        itemObject.transform.SetParent(itemsParent, false);
 
-        // Bottom-left corner of the grid
-        if (CanPlaceItem(testItemData, 0, height - testItemData.Height))
-            PlaceItem(testItemData, 0, height - testItemData.Height);
+        S_InventoryItem newItem = itemObject.AddComponent<S_InventoryItem>();
+        newItem.Initialize(testItemData, x, y, cellSize);
 
-        // Bottom-right corner of the grid
-        if (CanPlaceItem(testItemData, width - testItemData.Width, height - testItemData.Height))
-            PlaceItem(testItemData, width - testItemData.Width, height - testItemData.Height);
+        if (CanPlaceItem(newItem, x, y))
+        {
+            PlaceItem(newItem, x, y);
+        }
+        else
+        {
+            DestroyImmediate(itemObject);
+        }
+    }
+
+    // Add this method to handle item rotation
+    public void HandleItemRotation(S_InventoryItem item)
+    {
+        if (CanPlaceItem(item, item.GridX, item.GridY, item))
+        {
+            // The rotated item can be placed in its current position
+            HighlightCells(item, item.GridX, item.GridY);
+        }
+        else
+        {
+            // The rotated item cannot be placed in its current position
+            // You might want to implement logic to find a new valid position or revert the rotation
+            item.Rotate(); // Rotate back to the previous state
+            HighlightCells(item, item.GridX, item.GridY);
+        }
+    }
+
+    public bool CanAcceptItem(S_InventoryItem item)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public bool AddItem(S_InventoryItem item)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public Vector2 GetSlotPosition()
+    {
+        throw new System.NotImplementedException();
     }
 }
 
