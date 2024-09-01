@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(BaseItemData))]
+[CustomEditor(typeof(BaseItemData), true)]
 public class SO_InventoryItemDataEditor : Editor
 {
     private BaseItemData item;
@@ -17,9 +17,7 @@ public class SO_InventoryItemDataEditor : Editor
     public override void OnInspectorGUI()
     {
         EditorGUI.BeginChangeCheck();
-
         DrawDefaultInspector();
-
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Item Shape", EditorStyles.boldLabel);
 
@@ -59,7 +57,6 @@ public class SO_InventoryItemDataEditor : Editor
     {
         item.width = Mathf.Max(1, item.width);
         item.height = Mathf.Max(1, item.height);
-
         // Ensure shapeData has at least width * height elements
         while (item.shapeData.Count < item.width * item.height)
         {

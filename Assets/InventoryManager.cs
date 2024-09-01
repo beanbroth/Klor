@@ -8,39 +8,56 @@ public class InventoryManager : MonoBehaviour
     {
         get
         {
-            if (_instance == null)
-            {
-                _instance = FindObjectOfType<InventoryManager>();
-                if (_instance == null)
-                {
-                    GameObject obj = new GameObject();
-                    obj.name = typeof(InventoryManager).Name;
-                    _instance = obj.AddComponent<InventoryManager>();
-                }
-            }
             return _instance;
         }
     }
 
     [SerializeField] private S_InventoryGrid playerInventoryGrid;
     [SerializeField] private List<EquipmentSlot> equipmentSlots = new List<EquipmentSlot>();
-    [SerializeField] private BaseItemData testItemData; // Add this for test items
+    [SerializeField] private BaseItemData testItemData;
 
     private Dictionary<BaseItemInstance, ItemView> itemViews = new Dictionary<BaseItemInstance, ItemView>();
 
-    private void Awake()
+    public void ManualAwake()
     {
-        if (_instance == null)
+        _instance = this;
+
+        foreach (var slot in equipmentSlots)
         {
-            _instance = this;
-            DontDestroyOnLoad(this.gameObject);
+            slot.ManualAwake();
         }
-        else
+        playerInventoryGrid.ManualAwake();
+    }
+
+    private void OnEnable()
+    {
+        RefreshAllItemViews();
+    }
+
+    private void RefreshAllItemViews()
+    {
+        // Clear existing item views
+        foreach (var itemView in itemViews.Values)
         {
-            Destroy(gameObject);
+            Destroy(itemView.gameObject);
+        }
+        itemViews.Clear();
+
+        // Recreate views for items in the grid
+        foreach (var item in playerInventoryGrid.GetAllItems())
+        {
+            CreateItemView(item, playerInventoryGrid.ItemsParent);
         }
 
-        equipmentSlots.AddRange(FindObjectsOfType<EquipmentSlot>());
+        // Recreate views for items in equipment slots
+        foreach (var slot in equipmentSlots)
+        {
+            var item = slot.GetItem();
+            if (item != null)
+            {
+                CreateItemView(item, slot.transform);
+            }
+        }
     }
 
     public bool HandleItemDrag(BaseItemInstance item, Vector2 position)
@@ -71,8 +88,9 @@ public class InventoryManager : MonoBehaviour
             {
                 if (slot.CanAcceptItem(item) && slot.AddItem(item))
                 {
-                    RemoveItemFromPreviousLocation(item);
+                    RemoveItemFromPreviousLocation(item, slot.transform);
                     UpdateItemViewParent(item, slot.transform);
+                    UpdateItemView(item);
                     return true;
                 }
                 return false;
@@ -82,47 +100,54 @@ public class InventoryManager : MonoBehaviour
         // Try to add the item to the grid inventory
         if (playerInventoryGrid.HandleItemDrop(item, position))
         {
-            RemoveItemFromPreviousLocation(item);
+            RemoveItemFromPreviousLocation(item, playerInventoryGrid.ItemsParent);
             UpdateItemViewParent(item, playerInventoryGrid.ItemsParent);
             return true;
         }
 
-        // If we reach here, the drop failed, so we keep the item in its orizginal location
+        // If we reach here, the drop failed, so we keep the item in its original location
         UpdateItemViewParent(item, originalParent);
         return false;
     }
 
-    private void RemoveItemFromPreviousLocation(BaseItemInstance item)
+    private void RemoveItemFromPreviousLocation(BaseItemInstance item, Transform newParent)
     {
-        foreach (var slot in equipmentSlots)
+        // Check if the item is moving to a different parent
+        if (itemViews[item].transform.parent != newParent)
         {
-            if (slot.RemoveItem(item))
+            foreach (var slot in equipmentSlots)
             {
-                return;
+                if (slot.RemoveItem(item))
+                {
+                    return;
+                }
             }
+            playerInventoryGrid.RemoveItem(item);
         }
-        playerInventoryGrid.RemoveItem(item);
+        // If the item is staying in the same parent (e.g., moving within the grid),
+        // we don't need to remove it from its previous location
     }
 
-    private void UpdateItemViewParent(BaseItemInstance item, Transform newParent)
+    public void UpdateItemViewParent(BaseItemInstance item, Transform newParent)
     {
         if (itemViews.TryGetValue(item, out ItemView itemView))
         {
             itemView.transform.SetParent(newParent, false);
-            itemView.UpdateView(); // Update the view to reflect any changes
+            UpdateItemView(item);
         }
-        else
+        else if (gameObject.activeInHierarchy)
         {
             CreateItemView(item, newParent);
+            UpdateItemView(item);
         }
     }
-
 
     public void HandleItemRightClick(BaseItemInstance item)
     {
         // Implement right-click functionality here
         Debug.Log($"Right-clicked on item: {item.ItemData.itemName}");
     }
+
     public bool CreateAndAddItem(BaseItemData itemData)
     {
         if (itemData == null)
@@ -137,21 +162,26 @@ public class InventoryManager : MonoBehaviour
 
     private void ClearAllItems()
     {
-        // Clear items from inventory grid
         playerInventoryGrid.DestroyVisualGrid();
         playerInventoryGrid.CreateVisualGrid();
 
-        // Clear items from equipment slots
         foreach (var slot in equipmentSlots)
         {
             slot.ClearItem();
         }
+
+        foreach (var itemView in itemViews.Values)
+        {
+            Destroy(itemView.gameObject);
+        }
+        itemViews.Clear();
     }
 
-    public ItemView CreateItemView(BaseItemInstance item, Transform parent)
+    private ItemView CreateItemView(BaseItemInstance item, Transform parent)
     {
         if (itemViews.TryGetValue(item, out ItemView existingView))
         {
+            existingView.transform.SetParent(parent, false);
             return existingView;
         }
 
@@ -185,8 +215,11 @@ public class InventoryManager : MonoBehaviour
     {
         if (playerInventoryGrid.PlaceItem(item, x, y))
         {
-            CreateItemView(item, playerInventoryGrid.ItemsParent);
-            UpdateItemView(item);
+            if (gameObject.activeInHierarchy)
+            {
+                CreateItemView(item, playerInventoryGrid.ItemsParent);
+                UpdateItemView(item);
+            }
         }
     }
 
@@ -196,16 +229,25 @@ public class InventoryManager : MonoBehaviour
         {
             if (slot.CanAcceptItem(item) && slot.AddItem(item))
             {
-                CreateItemView(item, slot.transform);
+                if (gameObject.activeInHierarchy)
+                {
+                    CreateItemView(item, slot.transform);
+                }
                 return true;
             }
         }
 
         if (playerInventoryGrid.AddItem(item))
         {
-            CreateItemView(item, playerInventoryGrid.ItemsParent);
+            if (gameObject.activeInHierarchy)
+            {
+                CreateItemView(item, playerInventoryGrid.ItemsParent);
+            }
+            Debug.Log("item added + " + item.ItemData.itemName + item.GridX + item.GridY);
             return true;
         }
+
+        Debug.Log("item not added + " + item.ItemData.itemName + item.GridX + item.GridY);
 
         return false;
     }
@@ -214,5 +256,4 @@ public class InventoryManager : MonoBehaviour
 public interface IItemInventory
 {
     bool AddItem(BaseItemInstance item);
-
 }

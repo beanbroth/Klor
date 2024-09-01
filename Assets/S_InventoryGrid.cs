@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System;
+using static UnityEditor.Progress;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -11,8 +13,6 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
     public int height = 9;
     public GameObject cellPrefab;
     public float cellSize = 27f;
-    private List<BaseItemInstance> items = new List<BaseItemInstance>();
-    private Dictionary<BaseItemInstance, ItemView> itemViews = new Dictionary<BaseItemInstance, ItemView>();
 
     [SerializeField] private Transform slotsParent;
     [SerializeField] private Transform itemsParent;
@@ -22,6 +22,7 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
     [SerializeField] private Color invalidPlacementColor = new Color(1, 0, 0, 0.5f);
 
     private RectTransform gridRectTransform;
+    private InventoryGridLogic gridLogic;
 
     public Transform ItemsParent => itemsParent;
     private List<Image> highlightedCells = new List<Image>();
@@ -29,15 +30,14 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
     public RectTransform RectTransform { get; private set; }
     public float CellSize => cellSize;
 
-    void Awake()
+    public void ManualAwake()
     {
+        Debug.Log("awake called");
         RectTransform = GetComponent<RectTransform>();
         CreateParentObjects();
-    }
-
-    void Start()
-    {
+        gridLogic = new InventoryGridLogic(width, height, cellSize);
         CreateVisualGrid();
+
     }
 
     private void CreateParentObjects()
@@ -104,52 +104,18 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         {
             DestroyImmediate(itemsParent.GetChild(i).gameObject);
         }
-
-        items.Clear();
     }
 
     public bool CanPlaceItem(BaseItemInstance item, int x, int y, BaseItemInstance ignoredItem = null)
     {
-        if (x < 0 || y < 0 || x + item.CurrentWidth > width || y + item.CurrentHeight > height)
-            return false;
-
-        for (int i = 0; i < item.CurrentWidth; i++)
-        {
-            for (int j = 0; j < item.CurrentHeight; j++)
-            {
-                if (item.CurrentShape[i, j])
-                {
-                    if (IsOccupied(x + i, y + j, ignoredItem))
-                        return false;
-                }
-            }
-        }
-        return true;
+        return gridLogic.CanPlaceItem(item, x, y, ignoredItem);
     }
-
-    private bool IsOccupied(int x, int y, BaseItemInstance ignoredItem)
-    {
-        foreach (var item in items)
-        {
-            if (item == ignoredItem) continue; // Skip the item being dragged
-
-            if (item.GridX <= x && x < item.GridX + item.CurrentWidth &&
-                item.GridY <= y && y < item.GridY + item.CurrentHeight)
-            {
-                if (item.CurrentShape[x - item.GridX, y - item.GridY])
-                    return true;
-            }
-        }
-        return false;
-    }
-
 
     public bool PlaceItem(BaseItemInstance item, int x, int y)
     {
-        if (CanPlaceItem(item, x, y))
+        if (gridLogic.PlaceItem(item, x, y))
         {
-            item.UpdatePosition(x, y);
-            items.Add(item);
+            InventoryManager.Instance.UpdateItemView(item);
             return true;
         }
         return false;
@@ -157,7 +123,7 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
 
     public bool RemoveItem(BaseItemInstance item)
     {
-        return items.Remove(item);
+        return gridLogic.RemoveItem(item);
     }
 
     public bool HandleItemDrag(BaseItemInstance item, Vector2 position)
@@ -189,16 +155,12 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
 
-        if (CanPlaceItem(item, gridX, gridY, item))
+        if (gridLogic.CanPlaceItem(item, gridX, gridY, item))
         {
-            // Remove the item from its original position
-            items.Remove(item);
-
-            // Update the item's position
+            gridLogic.RemoveItem(item);
             item.UpdatePosition(gridX, gridY);
-
-            // Add the item back to the list at its new position
-            items.Add(item);
+            gridLogic.PlaceItem(item, gridX, gridY);
+            InventoryManager.Instance.UpdateItemView(item);
 
             ClearHighlight();
             return true;
@@ -207,6 +169,7 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         ClearHighlight();
         return false;
     }
+
     private void HighlightCells(BaseItemInstance item, int x, int y)
     {
         ClearHighlight();
@@ -243,57 +206,26 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         highlightedCells.Clear();
     }
 
-
     public bool AddItem(BaseItemInstance item)
     {
-        for (int y = 0; y < height; y++)
+        if (gridLogic.AddItem(item))
         {
-            for (int x = 0; x < width; x++)
-            {
-                if (CanPlaceItem(item, x, y))
-                {
-                    PlaceItem(item, x, y);
-                    return true;
-                }
-
-                for (int r = 0; r < 3; r++)
-                {
-                    item.Rotate();
-                    if (CanPlaceItem(item, x, y))
-                    {
-                        PlaceItem(item, x, y);
-                        return true;
-                    }
-                }
-
-                item.Rotate();
-            }
+            return true;
         }
         return false;
     }
 
     public void HandleItemRotation(BaseItemInstance item)
     {
-        if (CanPlaceItem(item, item.GridX, item.GridY, item))
-        {
-            if (itemViews.TryGetValue(item, out ItemView itemView))
-            {
-                itemView.UpdateView();
-            }
-            HighlightCells(item, item.GridX, item.GridY);
-        }
-        else
-        {
-            item.Rotate();
-            if (itemViews.TryGetValue(item, out ItemView itemView))
-            {
-                itemView.UpdateView();
-            }
-            HighlightCells(item, item.GridX, item.GridY);
-        }
+        gridLogic.HandleItemRotation(item);
+        HighlightCells(item, item.GridX, item.GridY);
+    }
+
+    public List<BaseItemInstance> GetAllItems()
+    {
+        return gridLogic.GetItems();
     }
 }
-
 
 #if UNITY_EDITOR
 [CustomEditor(typeof(S_InventoryGrid))]

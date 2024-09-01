@@ -3,6 +3,12 @@ using UnityEngine;
 public class InventoryToggler : MonoBehaviour
 {
     [SerializeField] private GameObject inventoryUI;
+    [SerializeField] private InventoryManager inventoryManager;
+
+    private void Awake()
+    {
+        inventoryManager.ManualAwake();
+    }
 
     private void Start()
     {

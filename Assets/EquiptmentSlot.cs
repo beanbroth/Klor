@@ -1,20 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(RectTransform))]
+[RequireComponent(typeof(Image))]
 public class EquipmentSlot : MonoBehaviour, IItemInventory
 {
-    private BaseItemInstance currentItem;
-    private RectTransform rectTransform;
-    private Image slotImage;
+    [SerializeField] private RectTransform rectTransform;
+    [SerializeField] private Image slotImage;
 
-    private void Awake()
+    private BaseItemInstance currentItem;
+
+    public void ManualAwake()
     {
-        rectTransform = GetComponent<RectTransform>();
-        slotImage = GetComponent<Image>();
-        if (slotImage == null)
-        {
-            slotImage = gameObject.AddComponent<Image>();
-        }
+        if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+        if (slotImage == null) slotImage = GetComponent<Image>();
     }
 
     public bool CanAcceptItem(BaseItemInstance item)
@@ -27,10 +26,9 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
     {
         if (CanAcceptItem(item))
         {
+            RemoveCurrentItem();
             currentItem = item;
-            //currentItem.CurrentRotation = RotationState.Rotation0;
             currentItem.UpdatePosition(0, 0);
-            InventoryManager.Instance.UpdateItemView(item);
             return true;
         }
         return false;
@@ -40,10 +38,19 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
     {
         if (currentItem == item)
         {
-            currentItem = null;
+            RemoveCurrentItem();
             return true;
         }
         return false;
+    }
+
+    private void RemoveCurrentItem()
+    {
+        if (currentItem != null)
+        {
+            var oldItem = currentItem;
+            currentItem = null;
+        }
     }
 
     public Vector2 GetSlotPosition()
@@ -53,7 +60,12 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
 
     public void ClearItem()
     {
-        currentItem = null;
+        RemoveCurrentItem();
+    }
+
+    public BaseItemInstance GetItem()
+    {
+        return currentItem;
     }
 
     public void HighlightSlot(bool canAccept)

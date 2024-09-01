@@ -1,49 +1,79 @@
 using UnityEngine;
 
-
-
 public class PlayerInteractController : MonoBehaviour
 {
-    public float interactionRange = 2f;
+    public float interactionDistance = 2f;
     public LayerMask interactableLayer;
-    public InventoryManager playerInventory;
+    public Color gizmoColor = Color.yellow;
 
     private Camera mainCamera;
+    private IInteractable currentInteractable;
 
-    void Start()
+    private void Start()
     {
         mainCamera = Camera.main;
     }
 
-    void Update()
+    private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            TryInteract();
-        }
+        HandleInteraction();
     }
 
-    void TryInteract()
+    private void HandleInteraction()
     {
-        Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, interactionRange, interactableLayer))
+        Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit, interactionDistance, interactableLayer))
         {
-            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+
             if (interactable != null)
             {
-                interactable.Interact(this);
+
+
+                if (currentInteractable != interactable)
+                {
+                    if (currentInteractable != null)
+                    {
+                        currentInteractable.OnHoverExit();
+                    }
+                    currentInteractable = interactable;
+                    currentInteractable.OnHoverEnter();
+                }
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    currentInteractable.Interact();
+                    currentInteractable = null;
+                    return;
+                }
+
+            }
+        }
+        else
+        {
+            if (currentInteractable != null)
+            {
+                currentInteractable.OnHoverExit();
+                currentInteractable = null;
             }
         }
     }
 
-    public bool AddItemToInventory(BaseItemInstance item)
+    private void OnDrawGizmos()
     {
-        return playerInventory.AddItem(item);
-    }
-}
+        if (mainCamera == null)
+        {
+            mainCamera = Camera.main;
+        }
 
-public interface IInteractable
-{
-    void Interact(PlayerInteractController player);
-    string GetInteractionPrompt();
+        if (mainCamera != null)
+        {
+            Gizmos.color = gizmoColor;
+            Vector3 direction = mainCamera.transform.forward * interactionDistance;
+            Vector3 origin = mainCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 0f));
+            Gizmos.DrawRay(origin, direction);
+        }
+    }
 }
