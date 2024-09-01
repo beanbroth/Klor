@@ -1,15 +1,15 @@
 using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(SO_InventoryItemData))]
+[CustomEditor(typeof(BaseItemData))]
 public class SO_InventoryItemDataEditor : Editor
 {
-    private SO_InventoryItemData item;
+    private BaseItemData item;
     private bool[,] editableShape;
 
     private void OnEnable()
     {
-        item = (SO_InventoryItemData)target;
+        item = (BaseItemData)target;
         EnsureMinimumSize();
         UpdateEditableShape();
     }

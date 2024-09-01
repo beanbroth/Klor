@@ -24,6 +24,9 @@ public class InventoryManager : MonoBehaviour
 
     [SerializeField] private S_InventoryGrid playerInventoryGrid;
     [SerializeField] private List<EquipmentSlot> equipmentSlots = new List<EquipmentSlot>();
+    [SerializeField] private BaseItemData testItemData; // Add this for test items
+
+    private Dictionary<BaseItemInstance, ItemView> itemViews = new Dictionary<BaseItemInstance, ItemView>();
 
     private void Awake()
     {
@@ -37,19 +40,15 @@ public class InventoryManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        
-        // Find and add all EquipmentSlots in the scene
         equipmentSlots.AddRange(FindObjectsOfType<EquipmentSlot>());
     }
 
-    public bool HandleItemDrag(S_InventoryItem item, Vector2 position)
+    public bool HandleItemDrag(BaseItemInstance item, Vector2 position)
     {
-        // Check if the item is over any equipment slot
         foreach (var slot in equipmentSlots)
         {
             if (RectTransformUtility.RectangleContainsScreenPoint(slot.GetComponent<RectTransform>(), position))
             {
-                // Highlight the slot if it can accept the item
                 if (slot.CanAcceptItem(item))
                 {
                     // Implement highlight logic
@@ -57,40 +56,43 @@ public class InventoryManager : MonoBehaviour
                 return true;
             }
         }
-
-        // If not over an equipment slot, handle grid drag
         return playerInventoryGrid.HandleItemDrag(item, position);
     }
 
-    public bool HandleItemDrop(S_InventoryItem item, Vector2 position)
+    public bool HandleItemDrop(BaseItemInstance item, Vector2 position)
     {
-        // Check if the item is dropped on any equipment slot
+        // Store the original parent before attempting to move the item
+        Transform originalParent = itemViews[item].transform.parent;
+
+        // Try to add the item to an equipment slot
         foreach (var slot in equipmentSlots)
         {
             if (RectTransformUtility.RectangleContainsScreenPoint(slot.GetComponent<RectTransform>(), position))
             {
-                if (slot.AddItem(item))
+                if (slot.CanAcceptItem(item) && slot.AddItem(item))
                 {
-                    // Remove the item from its previous location (grid or another equipment slot)
                     RemoveItemFromPreviousLocation(item);
+                    UpdateItemViewParent(item, slot.transform);
                     return true;
                 }
                 return false;
             }
         }
 
-        // If not dropped on an equipment slot, handle grid drop
+        // Try to add the item to the grid inventory
         if (playerInventoryGrid.HandleItemDrop(item, position))
         {
-            // Remove the item from its previous equipment slot if it was in one
             RemoveItemFromPreviousLocation(item);
+            UpdateItemViewParent(item, playerInventoryGrid.ItemsParent);
             return true;
         }
 
+        // If we reach here, the drop failed, so we keep the item in its orizginal location
+        UpdateItemViewParent(item, originalParent);
         return false;
     }
 
-    private void RemoveItemFromPreviousLocation(S_InventoryItem item)
+    private void RemoveItemFromPreviousLocation(BaseItemInstance item)
     {
         foreach (var slot in equipmentSlots)
         {
@@ -99,23 +101,118 @@ public class InventoryManager : MonoBehaviour
                 return;
             }
         }
-
-
-        //when it's dropped onto the grid, it then imediately removes itself?
-        //TODO: Revist this logic once other grids are implemented (shops)
-        //inventoryGrid.RemoveItem(item);
+        playerInventoryGrid.RemoveItem(item);
     }
 
-    public void PlaceItem(S_InventoryItem item, int x, int y)
+    private void UpdateItemViewParent(BaseItemInstance item, Transform newParent)
     {
-        playerInventoryGrid.PlaceItem(item, x, y);
+        if (itemViews.TryGetValue(item, out ItemView itemView))
+        {
+            itemView.transform.SetParent(newParent, false);
+            itemView.UpdateView(); // Update the view to reflect any changes
+        }
+        else
+        {
+            CreateItemView(item, newParent);
+        }
+    }
+
+
+    public void HandleItemRightClick(BaseItemInstance item)
+    {
+        // Implement right-click functionality here
+        Debug.Log($"Right-clicked on item: {item.ItemData.itemName}");
+    }
+    public bool CreateAndAddItem(BaseItemData itemData)
+    {
+        if (itemData == null)
+        {
+            Debug.LogError("Item data is not assigned!");
+            return false;
+        }
+
+        BaseItemInstance newItem = new BaseItemInstance(itemData, 0, 0);
+        return AddItem(newItem);
+    }
+
+    private void ClearAllItems()
+    {
+        // Clear items from inventory grid
+        playerInventoryGrid.DestroyVisualGrid();
+        playerInventoryGrid.CreateVisualGrid();
+
+        // Clear items from equipment slots
+        foreach (var slot in equipmentSlots)
+        {
+            slot.ClearItem();
+        }
+    }
+
+    public ItemView CreateItemView(BaseItemInstance item, Transform parent)
+    {
+        if (itemViews.TryGetValue(item, out ItemView existingView))
+        {
+            return existingView;
+        }
+
+        GameObject itemViewObject = new GameObject(item.ItemData.itemName + "View");
+        itemViewObject.transform.SetParent(parent, false);
+        ItemView itemView = itemViewObject.AddComponent<ItemView>();
+        itemView.Initialize(item, playerInventoryGrid.CellSize);
+        itemViews[item] = itemView;
+
+        return itemView;
+    }
+
+    public void UpdateItemView(BaseItemInstance item)
+    {
+        if (itemViews.TryGetValue(item, out ItemView itemView))
+        {
+            itemView.UpdateView();
+        }
+    }
+
+    public void RemoveItemView(BaseItemInstance item)
+    {
+        if (itemViews.TryGetValue(item, out ItemView itemView))
+        {
+            Destroy(itemView.gameObject);
+            itemViews.Remove(item);
+        }
+    }
+
+    public void PlaceItem(BaseItemInstance item, int x, int y)
+    {
+        if (playerInventoryGrid.PlaceItem(item, x, y))
+        {
+            CreateItemView(item, playerInventoryGrid.ItemsParent);
+            UpdateItemView(item);
+        }
+    }
+
+    public bool AddItem(BaseItemInstance item)
+    {
+        foreach (var slot in equipmentSlots)
+        {
+            if (slot.CanAcceptItem(item) && slot.AddItem(item))
+            {
+                CreateItemView(item, slot.transform);
+                return true;
+            }
+        }
+
+        if (playerInventoryGrid.AddItem(item))
+        {
+            CreateItemView(item, playerInventoryGrid.ItemsParent);
+            return true;
+        }
+
+        return false;
     }
 }
 
-public interface IInventorySlot
+public interface IItemInventory
 {
-    bool CanAcceptItem(S_InventoryItem item);
-    bool AddItem(S_InventoryItem item);
-    bool RemoveItem(S_InventoryItem item);
-    Vector2 GetSlotPosition();
+    bool AddItem(BaseItemInstance item);
+
 }

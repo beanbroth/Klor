@@ -94,8 +94,9 @@ public class FirstPersonController : PausableMonoBehaviour
         }
     }
 
-    private void Start()
+    override protected void Start()
     {
+        base.Start();
         _controller = GetComponent<CharacterController>();
         _input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM
@@ -266,7 +267,7 @@ public class FirstPersonController : PausableMonoBehaviour
 
     protected override void OnPauseStateChanged(bool isPaused)
     {
-        //disable this script update while game is paused
+       
         enabled = !isPaused;
     }
 }

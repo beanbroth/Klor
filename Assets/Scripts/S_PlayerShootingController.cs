@@ -7,6 +7,11 @@ public class S_PlayerShootingController : BaseWeaponController
 
     private bool hasFired = false;
 
+    override protected void Start()
+    {
+        base.Start();
+    }
+
     protected override void Update()
     {
         if (isAutomatic)

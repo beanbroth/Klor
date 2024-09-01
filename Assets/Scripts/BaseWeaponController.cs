@@ -14,8 +14,9 @@ public abstract class BaseWeaponController : PausableMonoBehaviour
     protected float nextFireTime;
     protected bool isFiring = false;
 
-    protected virtual void Start()
+    override protected void Start()
     {
+        base.Start();
         currentAmmo = maxAmmo;
     }
 

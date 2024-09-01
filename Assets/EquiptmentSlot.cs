@@ -1,38 +1,42 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class EquipmentSlot : MonoBehaviour, IInventorySlot
+public class EquipmentSlot : MonoBehaviour, IItemInventory
 {
-    public string SlotType; // e.g., "Helmet", "Weapon", "Armor"
-    private S_InventoryItem currentItem;
+    private BaseItemInstance currentItem;
     private RectTransform rectTransform;
+    private Image slotImage;
 
     private void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
+        slotImage = GetComponent<Image>();
+        if (slotImage == null)
+        {
+            slotImage = gameObject.AddComponent<Image>();
+        }
     }
 
-    public bool CanAcceptItem(S_InventoryItem item)
+    public bool CanAcceptItem(BaseItemInstance item)
     {
-        // Check if the slot is empty and if the item type matches the slot type
-        //currentItem == null && item.ItemData.ItemType.ToString() == SlotType;
-        return true;
+        // TODO: Implement proper checking based on item type and slot type
+        return currentItem == null;
     }
 
-    public bool AddItem(S_InventoryItem item)
+    public bool AddItem(BaseItemInstance item)
     {
         if (CanAcceptItem(item))
         {
-            Debug.Log("item added");
             currentItem = item;
-            item.transform.SetParent(transform);
-            item.transform.localPosition = Vector3.zero;
+            //currentItem.CurrentRotation = RotationState.Rotation0;
+            currentItem.UpdatePosition(0, 0);
+            InventoryManager.Instance.UpdateItemView(item);
             return true;
         }
         return false;
     }
 
-    public bool RemoveItem(S_InventoryItem item)
+    public bool RemoveItem(BaseItemInstance item)
     {
         if (currentItem == item)
         {
@@ -45,5 +49,21 @@ public class EquipmentSlot : MonoBehaviour, IInventorySlot
     public Vector2 GetSlotPosition()
     {
         return rectTransform.position;
+    }
+
+    public void ClearItem()
+    {
+        currentItem = null;
+    }
+
+    public void HighlightSlot(bool canAccept)
+    {
+        Color highlightColor = canAccept ? Color.green : Color.red;
+        slotImage.color = Color.Lerp(Color.white, highlightColor, 0.5f);
+    }
+
+    public void ResetHighlight()
+    {
+        slotImage.color = Color.white;
     }
 }

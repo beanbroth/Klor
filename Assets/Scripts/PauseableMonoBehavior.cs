@@ -1,27 +1,36 @@
-
 using UnityEngine;
 
 public abstract class PausableMonoBehaviour : MonoBehaviour
 {
-    protected virtual void OnEnable()
+    protected bool IsCurrentlyPaused { get; private set; }
+
+    protected virtual void Start()
     {
         if (S_GamePauseManager.Instance != null)
         {
-            S_GamePauseManager.Instance.OnPauseStateChanged += OnPauseStateChanged;
-            OnPauseStateChanged(S_GamePauseManager.Instance.IsPaused);
-        }
-        else
-        {
-            Debug.LogWarning($"GamePauseManager not found when enabling {gameObject.name}");
+            S_GamePauseManager.Instance.OnPauseStateChanged += HandlePauseStateChanged;
+            IsCurrentlyPaused = S_GamePauseManager.Instance.IsPaused;
+
+            // Handle initial state
+            if (IsCurrentlyPaused)
+            {
+                OnPauseStateChanged(true);
+            }
         }
     }
 
-    protected virtual void OnDisable()
+    protected virtual void OnDestroy()
     {
         if (S_GamePauseManager.Instance != null)
         {
-            S_GamePauseManager.Instance.OnPauseStateChanged -= OnPauseStateChanged;
+            S_GamePauseManager.Instance.OnPauseStateChanged -= HandlePauseStateChanged;
         }
+    }
+
+    private void HandlePauseStateChanged(bool isPaused)
+    {
+        IsCurrentlyPaused = isPaused;
+        OnPauseStateChanged(isPaused);
     }
 
     protected abstract void OnPauseStateChanged(bool isPaused);

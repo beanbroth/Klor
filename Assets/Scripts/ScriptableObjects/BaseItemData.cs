@@ -2,8 +2,8 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "New Inventory Item", menuName = "Inventory/Item")]
-public class SO_InventoryItemData : ScriptableObject
+[CreateAssetMenu(fileName = "New BaseItemData", menuName = "Inventory/BaseItemData")]
+public class BaseItemData : ScriptableObject
 {
     public string itemName;
     public Sprite itemSprite;
