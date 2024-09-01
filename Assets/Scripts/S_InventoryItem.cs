@@ -8,16 +8,14 @@ public class S_InventoryItem : MonoBehaviour, IPointerDownHandler, IDragHandler,
     public int GridX { get; private set; }
     public int GridY { get; private set; }
     private RectTransform rectTransform;
-    private Canvas canvas;
     private S_InventoryGrid inventoryGrid;
     private Vector2 originalPosition;
     private CanvasGroup canvasGroup;
-    private Vector2 dragOffset;
+    private Vector2 offset;
 
     private void Awake()
     {
         rectTransform = GetComponent<RectTransform>();
-        canvas = GetComponentInParent<Canvas>();
         inventoryGrid = GetComponentInParent<S_InventoryGrid>();
         canvasGroup = gameObject.AddComponent<CanvasGroup>();
     }
@@ -66,35 +64,50 @@ public class S_InventoryItem : MonoBehaviour, IPointerDownHandler, IDragHandler,
         canvasGroup.blocksRaycasts = false;
         transform.SetAsLastSibling();
 
-        // Calculate the offset between the cursor and the item's position
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas.transform as RectTransform, eventData.position, eventData.pressEventCamera, out Vector2 localPoint);
-        dragOffset = rectTransform.anchoredPosition - localPoint;
+        // Calculate the offset between the mouse position and the item's position
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            rectTransform.parent as RectTransform,
+            eventData.position,
+            eventData.pressEventCamera,
+            out Vector2 localPoint);
+        offset = rectTransform.anchoredPosition - localPoint;
 
-        // Immediately start dragging
-        OnDrag(eventData);
+        MoveToMousePosition(eventData);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        Vector2 pointerPosition = eventData.position;
-        Vector2 localPointerPosition;
-
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvas.transform as RectTransform, pointerPosition, eventData.pressEventCamera, out localPointerPosition))
-        {
-            rectTransform.anchoredPosition = localPointerPosition + dragOffset;
-        }
-
+        MoveToMousePosition(eventData);
         inventoryGrid.HandleItemDrag(this, eventData.position);
+    }
+
+    private void MoveToMousePosition(PointerEventData eventData)
+    {
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            rectTransform.parent as RectTransform,
+            eventData.position,
+            eventData.pressEventCamera,
+            out Vector2 localPoint))
+        {
+            rectTransform.anchoredPosition = localPoint + offset;
+        }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
-        if (!inventoryGrid.HandleItemDrop(this, eventData.position))
+
+        if (inventoryGrid.HandleItemDrop(this, eventData.position))
         {
+            // The item was successfully placed
+        }
+        else
+        {
+            // If it can't be placed, return to original position
             ReturnToOriginalPosition();
+            // Add the item back to its original position in the grid
+            inventoryGrid.PlaceItem(ItemData, GridX, GridY);
         }
     }
 

@@ -19,10 +19,13 @@ public class S_InventoryGrid : MonoBehaviour
     [SerializeField] private Transform slotsParent;
     [SerializeField] private Transform itemsParent;
 
-    // New variables for highlighting
+    // Variables for highlighting
     [SerializeField] private Color validPlacementColor = new Color(0, 1, 0, 0.5f);
     [SerializeField] private Color invalidPlacementColor = new Color(1, 0, 0, 0.5f);
     private List<Image> highlightedCells = new List<Image>();
+
+    public RectTransform RectTransform => gridRectTransform;
+    public float CellSize => cellSize;
 
     void Awake()
     {
@@ -92,7 +95,6 @@ public class S_InventoryGrid : MonoBehaviour
         }
     }
 
-
     public void DestroyVisualGrid()
     {
         for (int i = slotsParent.childCount - 1; i >= 0; i--)
@@ -108,7 +110,7 @@ public class S_InventoryGrid : MonoBehaviour
         items.Clear();
     }
 
-    public bool CanPlaceItem(SO_InventoryItemData itemData, int x, int y)
+    public bool CanPlaceItem(SO_InventoryItemData itemData, int x, int y, S_InventoryItem ignoredItem = null)
     {
         if (x < 0 || y < 0 || x + itemData.Width > width || y + itemData.Height > height)
             return false;
@@ -119,7 +121,7 @@ public class S_InventoryGrid : MonoBehaviour
             {
                 if (itemData.Shape[i, j])
                 {
-                    if (IsOccupied(x + i, y + j))
+                    if (IsOccupied(x + i, y + j, ignoredItem))
                         return false;
                 }
             }
@@ -127,10 +129,12 @@ public class S_InventoryGrid : MonoBehaviour
         return true;
     }
 
-    private bool IsOccupied(int x, int y)
+    private bool IsOccupied(int x, int y, S_InventoryItem ignoredItem)
     {
         foreach (var item in items)
         {
+            if (item == ignoredItem) continue; // Skip the item being dragged
+
             if (item.GridX <= x && x < item.GridX + item.ItemData.Width &&
                 item.GridY <= y && y < item.GridY + item.ItemData.Height)
             {
@@ -181,7 +185,7 @@ public class S_InventoryGrid : MonoBehaviour
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
 
-        HighlightCells(item.ItemData, gridX, gridY);
+        HighlightCells(item.ItemData, gridX, gridY, item);
     }
 
     public bool HandleItemDrop(S_InventoryItem item, Vector2 position)
@@ -196,7 +200,7 @@ public class S_InventoryGrid : MonoBehaviour
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
 
-        if (CanPlaceItem(item.ItemData, gridX, gridY))
+        if (CanPlaceItem(item.ItemData, gridX, gridY, item))
         {
             // Remove the item from its original position
             items.Remove(item);
@@ -215,11 +219,11 @@ public class S_InventoryGrid : MonoBehaviour
         return false;
     }
 
-    private void HighlightCells(SO_InventoryItemData itemData, int x, int y)
+    private void HighlightCells(SO_InventoryItemData itemData, int x, int y, S_InventoryItem ignoredItem)
     {
         ClearHighlight();
 
-        bool canPlace = CanPlaceItem(itemData, x, y);
+        bool canPlace = CanPlaceItem(itemData, x, y, ignoredItem);
         Color highlightColor = canPlace ? validPlacementColor : invalidPlacementColor;
 
         for (int i = 0; i < itemData.Width; i++)
