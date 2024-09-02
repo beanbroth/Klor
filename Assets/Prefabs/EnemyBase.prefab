@@ -296,7 +296,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62fc69ebc131fb8448cab63bb67dc102, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fallDuration: 0.7
+  fallDuration: 0.57
   maxFallAngle: 90
   positionOffsetTransform: {fileID: 2282518283764446786}
   fallingCurve:

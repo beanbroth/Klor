@@ -13,7 +13,10 @@ Shader "Custom/3LayeredBillboardSpriteWithMultipleDamageTypesAndFlash_Instanced"
     }
     SubShader
     {
-        Tags {"Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"}
+        Tags
+        {
+            "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"
+        }
         LOD 100
 
         ZWrite Off
@@ -137,7 +140,7 @@ Shader "Custom/3LayeredBillboardSpriteWithMultipleDamageTypesAndFlash_Instanced"
                 fixed4 topLayer = tex2D(_MainTex, i.uv);
                 fixed4 midLayer = tex2D(_MidLayerTex, i.uv);
                 fixed4 bottomLayer = tex2D(_BottomLayerTex, i.uv);
-                
+
                 float3 layerAlpha = float3(topLayer.a, midLayer.a, bottomLayer.a);
 
                 float enemyID = UNITY_ACCESS_INSTANCED_PROP(Props, _EnemyID);
@@ -145,29 +148,27 @@ Shader "Custom/3LayeredBillboardSpriteWithMultipleDamageTypesAndFlash_Instanced"
                 for (int j = 0; j < _MaxDamageInstancesPerEnemy; j++)
                 {
                     DamageInfo damage = _DamageBuffer[startIndex + j];
-                    if (damage.damage > 0)
+
+                    float2 damagePos = damage.positionAndType.xy;
+                    float damageType = damage.positionAndType.z;
+                    float damageRotation = damage.positionAndType.w;
+                    float damageScale = damage.scale;
+
+                    for (int layer = 0; layer < 3; layer++)
                     {
-                        float2 damagePos = damage.positionAndType.xy;
-                        float damageType = damage.positionAndType.z;
-                        float damageRotation = damage.positionAndType.w;
-                        float damageScale = damage.scale;
+                        float layerDamageScale = damageScale * _DamageLayerScale[layer];
+                        float2 damageUV = (i.uv - damagePos) / layerDamageScale;
+                        damageUV = rotateUV(damageUV, damageRotation);
 
-                        for (int layer = 0; layer < 3; layer++)
+                        if (all(damageUV >= 0 && damageUV <= 1))
                         {
-                            float layerDamageScale = damageScale * _DamageLayerScale[layer];
-                            float2 damageUV = (i.uv - damagePos) / layerDamageScale;
-                            damageUV = rotateUV(damageUV, damageRotation);
+                            float damageAlpha;
+                            if (damageType == 0) damageAlpha = tex2D(_DamageTex1, damageUV).a;
+                            else if (damageType == 1) damageAlpha = tex2D(_DamageTex2, damageUV).a;
+                            else damageAlpha = tex2D(_DamageTex3, damageUV).a;
 
-                            if (all(damageUV >= 0 && damageUV <= 1))
-                            {
-                                float damageAlpha;
-                                if (damageType == 0) damageAlpha = tex2D(_DamageTex1, damageUV).a;
-                                else if (damageType == 1) damageAlpha = tex2D(_DamageTex2, damageUV).a;
-                                else damageAlpha = tex2D(_DamageTex3, damageUV).a;
-
-                                // Create a hole where damage is applied, with decreasing effect on lower layers
-                                layerAlpha[layer] = min(layerAlpha[layer], 1 - damageAlpha);
-                            }
+                            // Create a hole where damage is applied, with decreasing effect on lower layers
+                            layerAlpha[layer] = min(layerAlpha[layer], 1 - damageAlpha);
                         }
                     }
                 }

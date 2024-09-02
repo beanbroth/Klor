@@ -18,7 +18,6 @@ public class EnemySpawner : MonoBehaviour
 
     private void Start()
     {
-        // Spawn enemies immediately when the script starts
         SpawnEnemies();
     }
 
@@ -62,29 +61,5 @@ public class EnemySpawner : MonoBehaviour
 
         Debug.LogWarning("Failed to find a valid spawn point after " + maxSpawnAttempts + " attempts.");
         return false;
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, spawnRadius);
-
-        // Draw some sample points on the NavMesh
-        for (int i = 0; i < 10; i++)
-        {
-            Vector3 randomPoint = transform.position + Random.insideUnitSphere * spawnRadius;
-            NavMeshHit hit;
-
-            if (NavMesh.SamplePosition(randomPoint, out hit, spawnRadius, NavMesh.AllAreas))
-            {
-                Gizmos.color = Color.green;
-                Gizmos.DrawSphere(hit.position, 0.5f);
-            }
-            else
-            {
-                Gizmos.color = Color.red;
-                Gizmos.DrawSphere(randomPoint, 0.5f);
-            }
-        }
     }
 }
