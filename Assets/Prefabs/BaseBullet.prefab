@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 4218920076619297219}
   - component: {fileID: 5049791818394639713}
   - component: {fileID: 3386250050758835999}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: BaseBullet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -150,6 +150,9 @@ MonoBehaviour:
   damage: 10
   lifetime: 5
   hitEffectPrefab: {fileID: 0}
+  trailLingeringTime: 0.5
+  rb: {fileID: 4218920076619297219}
+  trailRenderer: {fileID: 3386250050758835999}
 --- !u!96 &3386250050758835999
 TrailRenderer:
   serializedVersion: 3
@@ -192,7 +195,7 @@ TrailRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Time: 0.5
+  m_Time: 0.08
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3

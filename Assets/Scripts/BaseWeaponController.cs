@@ -9,6 +9,7 @@ public abstract class BaseWeaponController : PausableMonoBehaviour
     [SerializeField] protected int maxAmmo = 30;
     [SerializeField] protected float reloadTime = 2f;
     [SerializeField] protected bool isAutomatic = false;
+    [SerializeField] protected float damage = 10f;
 
     [SerializeField] [ReadOnly] protected int currentAmmo;
     protected float nextFireTime;

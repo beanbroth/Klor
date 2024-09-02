@@ -43,8 +43,7 @@ public class EnemySpawner : MonoBehaviour
                 break;
             }
         }
-
-        Debug.Log($"Spawning complete. Remaining budget: {remainingBudget}");
+        
     }
 
     private bool SpawnEnemy(EnemyType enemyType)

@@ -53,7 +53,7 @@ public class ItemView : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDr
         rectTransform.pivot = new Vector2(0, 1);
 
         UpdateSizeAndPosition();
-        itemImage.sprite = Item.ItemData.itemSprite;
+        itemImage.sprite = Item.ItemData.ItemSprite;
         CreateShapeOutline();
         itemImageObject.transform.SetAsLastSibling();
         itemImageObject.transform.rotation = Quaternion.Euler(0, 0, -90 * (int)Item.CurrentRotation);

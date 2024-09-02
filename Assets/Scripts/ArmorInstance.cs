@@ -12,7 +12,7 @@ public class ArmorInstance : BaseItemInstance
     public void EquipOrUnequip()
     {
         // Implement equip/unequip logic
-        Debug.Log($"Equipping or unequipping {ItemData.itemName}");
+        Debug.Log($"Equipping or unequipping {ItemData.ItemName}");
     }
 
     public void UpdateDurability(float amount)

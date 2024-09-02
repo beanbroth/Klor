@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 [RequireComponent(typeof(RectTransform))]
 [RequireComponent(typeof(Image))]
@@ -7,8 +8,14 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
 {
     [SerializeField] private RectTransform rectTransform;
     [SerializeField] private Image slotImage;
+    
+    [SerializeField] private EquipmentSlotType slotType;
+    
+    public event Action<BaseItemInstance> OnItemChanged;
 
     public RectTransform RectTransform => rectTransform;
+
+    public BaseItemInstance CurrentItem => currentItem;
 
     private BaseItemInstance currentItem;
 
@@ -20,8 +27,7 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
 
     public bool CanAcceptItem(BaseItemInstance item)
     {
-        // TODO: Implement proper checking based on item type and slot type. For now just make sure the slot is empty.
-        return currentItem == null;
+        return currentItem == null && item.ItemData.EquipmentSlotType == slotType;
     }
 
     public bool AddItem(BaseItemInstance item)
@@ -31,6 +37,7 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
             RemoveCurrentItem();
             currentItem = item;
             currentItem.UpdatePosition(0, 0);
+            OnItemChanged?.Invoke(currentItem);
             return true;
         }
         return false;
@@ -52,6 +59,7 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
         {
             var oldItem = currentItem;
             currentItem = null;
+            OnItemChanged?.Invoke(null);
         }
     }
 

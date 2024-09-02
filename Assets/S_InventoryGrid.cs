@@ -13,31 +13,24 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
     public int height = 9;
     public GameObject cellPrefab;
     public float cellSize = 27f;
-
     [SerializeField] private Transform slotsParent;
     [SerializeField] private Transform itemsParent;
-
     [SerializeField] private Color baseSlotColor = Color.gray;
     [SerializeField] private Color validPlacementColor = new Color(0, 1, 0, 0.5f);
     [SerializeField] private Color invalidPlacementColor = new Color(1, 0, 0, 0.5f);
-
     private RectTransform gridRectTransform;
     private InventoryGridLogic gridLogic;
-
     public Transform ItemsParent => itemsParent;
     private List<Image> highlightedCells = new List<Image>();
-
     public RectTransform RectTransform { get; private set; }
     public float CellSize => cellSize;
 
     public void ManualAwake()
     {
-        Debug.Log("awake called");
         RectTransform = GetComponent<RectTransform>();
         CreateParentObjects();
         gridLogic = new InventoryGridLogic(width, height, cellSize);
         CreateVisualGrid();
-
     }
 
     private void CreateParentObjects()
@@ -69,10 +62,9 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         {
             gridRectTransform = GetComponent<RectTransform>();
         }
+
         DestroyVisualGrid();
-
         gridRectTransform.sizeDelta = new Vector2(width * cellSize, height * cellSize);
-
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -118,6 +110,7 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
             InventoryManager.Instance.UpdateItemView(item);
             return true;
         }
+
         return false;
     }
 
@@ -128,48 +121,34 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
 
     public bool HandleItemDrag(BaseItemInstance item, Vector2 position)
     {
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            RectTransform,
-            position,
-            null,
-            out Vector2 localPoint
-        );
-
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(RectTransform, position, null, out Vector2 localPoint);
+        localPoint.x -= cellSize / 2;
+        localPoint.y += cellSize / 2;
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
-
         HighlightCells(item, gridX, gridY);
-
         return true;
     }
 
     public bool HandleItemDrop(BaseItemInstance item, Vector2 position)
     {
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            RectTransform,
-            position,
-            null,
-            out Vector2 localPoint
-        );
-
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(RectTransform, position, null, out Vector2 localPoint);
+        localPoint.x -= cellSize / 2;
+        localPoint.y += cellSize / 2;
         int gridX = Mathf.FloorToInt((localPoint.x + (width * cellSize / 2)) / cellSize);
         int gridY = Mathf.FloorToInt(((height * cellSize / 2) - localPoint.y) / cellSize);
-
         if (gridLogic.CanPlaceItem(item, gridX, gridY, item))
         {
             gridLogic.RemoveItem(item);
             item.UpdatePosition(gridX, gridY);
             gridLogic.PlaceItem(item, gridX, gridY);
             InventoryManager.Instance.UpdateItemView(item);
-
             ClearHighlight();
             return true;
         }
 
         //return the item to its original position, with a rotation that fits. It's brute force, but works.
-
         gridLogic.RotateObjectToFit(item);
-
         ClearHighlight();
         return false;
     }
@@ -177,10 +156,8 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
     private void HighlightCells(BaseItemInstance item, int x, int y)
     {
         ClearHighlight();
-
         bool canPlace = CanPlaceItem(item, x, y, item);
         Color highlightColor = canPlace ? validPlacementColor : invalidPlacementColor;
-
         for (int i = 0; i < item.CurrentWidth; i++)
         {
             for (int j = 0; j < item.CurrentHeight; j++)
@@ -189,7 +166,6 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
                 {
                     int cellX = x + i;
                     int cellY = y + j;
-
                     if (cellX >= 0 && cellX < width && cellY >= 0 && cellY < height)
                     {
                         Image cellImage = slotsParent.GetChild(cellY * width + cellX).GetComponent<Image>();
@@ -207,6 +183,7 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         {
             cell.color = baseSlotColor;
         }
+
         highlightedCells.Clear();
     }
 
@@ -216,6 +193,7 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
         {
             return true;
         }
+
         return false;
     }
 
@@ -240,7 +218,6 @@ public class InventoryGridEditor : Editor
         DrawDefaultInspector();
         S_InventoryGrid grid = (S_InventoryGrid)target;
         EditorGUILayout.Space();
-
         if (GUILayout.Button("Create Grid"))
         {
             grid.CreateVisualGrid();

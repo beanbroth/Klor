@@ -10,6 +10,6 @@ public class FoodInstance : BaseItemInstance
     {
         // Implement food consumption logic
         // This could involve starting a coroutine to restore health over time
-        Debug.Log($"Consumed {ItemData.itemName}, restoring {((FoodItemData)ItemData).healthRestored} health over {((FoodItemData)ItemData).healthRestoreTime} seconds");
+        Debug.Log($"Consumed {ItemData.ItemName}, restoring {((FoodItemData)ItemData).healthRestored} health over {((FoodItemData)ItemData).healthRestoreTime} seconds");
     }
 }

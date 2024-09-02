@@ -1,15 +1,19 @@
-
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class S_BulletController : MonoBehaviour
 {
-    [SerializeField] private float damage = 10f;
+    [SerializeField] public float damage = 10f;
     [SerializeField] private float lifetime = 5f;
     [SerializeField] private GameObject hitEffectPrefab;
+    [SerializeField] private float trailLingeringTime = 0.5f; // Time for the trail to linger after hit
+
+    [SerializeField]  private Rigidbody rb;
+    [SerializeField] private TrailRenderer trailRenderer;
 
     private void Start()
     {
+        trailLingeringTime = trailRenderer.time;
         // Destroy the bullet after its lifetime
         Destroy(gameObject, lifetime);
     }
@@ -40,7 +44,22 @@ public class S_BulletController : MonoBehaviour
             }
         }
 
-        // Destroy the bullet
-        Destroy(gameObject);
+        // Disable the bullet's renderer and collider
+        GetComponent<Renderer>().enabled = false;
+        GetComponent<Collider>().enabled = false;
+
+        // Stop the bullet's movement
+        rb.velocity = Vector3.zero;
+        rb.isKinematic = true;
+
+        // Keep the trail renderer active
+        if (trailRenderer != null)
+        {
+            trailRenderer.transform.SetParent(null);
+            Destroy(trailRenderer.gameObject, trailLingeringTime);
+        }
+
+        // Destroy the bullet object after the trail has disappeared
+        Destroy(gameObject, trailLingeringTime);
     }
 }

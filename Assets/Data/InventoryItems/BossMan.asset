@@ -12,19 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5b3fc0a53c8ad04fbfa30a3e4b3a4b5, type: 3}
   m_Name: BossMan
   m_EditorClassIdentifier: 
-  itemName: Dork22
+  itemName: Bossman
   itemSprite: {fileID: 21300000, guid: 1c773878db91ffd40aea30eb5d7c4cb0, type: 3}
+  equipmentSlotType: 4
   width: 3
   height: 2
   shapeData: 010101010101
-  prefab: {fileID: 0}
+  prefab: {fileID: 6121278318839902424, guid: 7146c0a6862b43e46bef859a16bb0f37, type: 3}
   maxDurability: 100
-  damagePerBullet: 15
-  rateOfFire: 0.3
-  isAutomatic: 0
+  damage: 4
+  fireRate: 51.12
+  isAutomatic: 1
   bulletSpeed: 100
-  inaccuracy: 0.1
+  inaccuracy: 20
   recoilPerShot: 1
-  bulletsPerShot: 10
-  ammoCapacity: 8
+  bulletsPerShot: 40
+  ammoCapacity: 100000
+  bulletPrefab: {fileID: 1000719039445856164, guid: 9806a8d587ff1c54d92f990181ef9415,
+    type: 3}
   attachmentSlots: []

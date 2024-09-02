@@ -1,14 +1,18 @@
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "New BaseItemData", menuName = "Inventory/BaseItemData")]
 public abstract class BaseItemData : ScriptableObject
 {
-    public string itemName;
-    public Sprite itemSprite;
+    [SerializeField] private string itemName;
+    [SerializeField] private Sprite itemSprite;
+    [SerializeField] private EquipmentSlotType equipmentSlotType;
     [Range(1, 9)] public int width = 1;
     [Range(1, 9)] public int height = 1;
     public List<bool> shapeData = new List<bool>();
+    public int Width => width;
+    public int Height => height;
 
     public bool[,] Shape
     {
@@ -26,9 +30,14 @@ public abstract class BaseItemData : ScriptableObject
                     }
                 }
             }
+
             return shape;
         }
     }
+
+    public Sprite ItemSprite => itemSprite;
+    public string ItemName => itemName;
+    public EquipmentSlotType EquipmentSlotType => equipmentSlotType;
 
     public void SetShape(bool[,] newShape)
     {
@@ -61,9 +70,16 @@ public abstract class BaseItemData : ScriptableObject
         }
     }
 
-    public int Width => width;
-    public int Height => height;
-
     public abstract BaseItemInstance CreateInstance(int x, int y);
+}
 
+public enum EquipmentSlotType
+{
+    None,
+    Head,
+    Chest,
+    Feet,
+    Weapon,
+    Trinket,
+    Nade
 }

@@ -14,6 +14,9 @@ public class InventoryManager : MonoBehaviour
 
     [SerializeField] public S_InventoryGrid playerInventoryGrid;
     [SerializeField] public List<EquipmentSlot> equipmentSlots = new List<EquipmentSlot>();
+    [SerializeField] public EquipmentSlot primaryWeaponSlot;
+    [SerializeField] public EquipmentSlot secondaryWeaponSlot;
+    
     [SerializeField] private BaseItemData testItemData;
 
     private Dictionary<BaseItemInstance, ItemView> itemViews = new Dictionary<BaseItemInstance, ItemView>();
@@ -33,7 +36,8 @@ public class InventoryManager : MonoBehaviour
     {
         RefreshAllItemViews();
     }
-
+    
+    
     private void RefreshAllItemViews()
     {
         // Clear existing item views
@@ -195,7 +199,7 @@ public class InventoryManager : MonoBehaviour
     public void HandleItemRightClick(BaseItemInstance item)
     {
         // Implement right-click functionality here
-        Debug.Log($"Right-clicked on item: {item.ItemData.itemName}");
+        Debug.Log($"Right-clicked on item: {item.ItemData.ItemName}");
     }
 
     public bool CreateAndAddItem(BaseItemData itemData)
@@ -235,7 +239,7 @@ public class InventoryManager : MonoBehaviour
             return existingView;
         }
 
-        GameObject itemViewObject = new GameObject(item.ItemData.itemName + "View");
+        GameObject itemViewObject = new GameObject(item.ItemData.ItemName + "View");
         itemViewObject.transform.SetParent(parent, false);
         ItemView itemView = itemViewObject.AddComponent<ItemView>();
         itemView.Initialize(item, playerInventoryGrid.CellSize);
@@ -293,11 +297,11 @@ public class InventoryManager : MonoBehaviour
             {
                 CreateItemView(item, playerInventoryGrid.ItemsParent);
             }
-            Debug.Log("item added + " + item.ItemData.itemName + item.GridX + item.GridY);
+            Debug.Log("item added + " + item.ItemData.ItemName + item.GridX + item.GridY);
             return true;
         }
 
-        Debug.Log("item not added + " + item.ItemData.itemName + item.GridX + item.GridY);
+        Debug.Log("item not added + " + item.ItemData.ItemName + item.GridX + item.GridY);
 
         return false;
     }

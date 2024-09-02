@@ -14,17 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemName: Dork22
   itemSprite: {fileID: 21300000, guid: 34aed46b3c1f3f8439959e90de4a881c, type: 3}
+  equipmentSlotType: 4
   width: 2
   height: 2
   shapeData: 01010101
-  prefab: {fileID: 0}
+  prefab: {fileID: 6121278318839902424, guid: 9c9b0efd0fe277444a193266a6055e58, type: 3}
   maxDurability: 100
-  damagePerBullet: 22
-  rateOfFire: 0.1
+  damage: 34
+  fireRate: 1
   isAutomatic: 0
   bulletSpeed: 100
-  inaccuracy: 0.1
+  inaccuracy: 2
   recoilPerShot: 1
   bulletsPerShot: 1
   ammoCapacity: 10
+  bulletPrefab: {fileID: 1000719039445856164, guid: 9806a8d587ff1c54d92f990181ef9415,
+    type: 3}
   attachmentSlots: []

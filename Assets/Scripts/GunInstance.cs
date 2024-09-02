@@ -7,6 +7,8 @@ public class GunInstance : BaseItemInstance
     public float WeaponXP { get; private set; }
     public List<AttachmentInstance> Attachments { get; private set; }
     public List<OilInstance> AppliedOils { get; private set; }
+    public int currentAmmo;
+
 
     public GunInstance(GunItemData itemData, int x, int y) : base(itemData, x, y)
     {
@@ -14,6 +16,7 @@ public class GunInstance : BaseItemInstance
         WeaponXP = 0f;
         Attachments = new List<AttachmentInstance>();
         AppliedOils = new List<OilInstance>();
+        currentAmmo = itemData.ammoCapacity;
     }
 
     public void AddAttachment(AttachmentInstance attachment)
@@ -28,23 +31,20 @@ public class GunInstance : BaseItemInstance
         // Apply oil effects
     }
 
-
-    public void EquipOrUnequip()
-    {
-        // Implement equip/unequip logic
-    }
-
     public void UpdateDurability(float amount)
     {
-        CurrentDurability = Mathf.Clamp(CurrentDurability + amount, 0, ((GunItemData)ItemData).maxDurability);
+        //update durability
+        CurrentDurability += amount;
+        if (CurrentDurability <= 0)
+        {
+           //break item
+        }
     }
 
     public void AddXP(float amount)
     {
         WeaponXP += amount;
-        // Implement level up logic if needed
+        //level up
     }
-
-    //override right click action
-
+    
 }

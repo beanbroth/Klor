@@ -1,149 +1,161 @@
-Shader "Custom/2BillboardSpriteWithMultipleDamageTypesAndFlash_Instanced"
+Shader "Custom/3LayeredBillboardSpriteWithMultipleDamageTypesAndFlash_Instanced"
 {
     Properties
     {
-        _MainTex("Sprite Texture", 2D) = "white" {}
+        _MainTex("Top Layer Texture", 2D) = "white" {}
+        _MidLayerTex("Middle Layer Texture", 2D) = "white" {}
+        _BottomLayerTex("Bottom Layer Texture", 2D) = "white" {}
         _DamageTex1("Damage Texture 1", 2D) = "white" {}
         _DamageTex2("Damage Texture 2", 2D) = "white" {}
         _DamageTex3("Damage Texture 3", 2D) = "white" {}
         _FlashColor("Flash Color", Color) = (1,0,0,1)
+        _DamageLayerScale("Damage Layer Scale", Vector) = (1, 0.9, 0.8, 0)
     }
-        SubShader
+    SubShader
+    {
+        Tags {"Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"}
+        LOD 100
+
+        ZWrite Off
+        Blend SrcAlpha OneMinusSrcAlpha
+        Cull Off
+
+        Pass
         {
-            Tags {"Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"}
-            LOD 100
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+            #include "UnityCG.cginc"
 
-            ZWrite Off
-            Blend SrcAlpha OneMinusSrcAlpha
-            Cull Off
-
-            Pass
+            struct appdata
             {
-                CGPROGRAM
-                #pragma vertex vert
-                #pragma fragment frag
-                #pragma multi_compile_instancing
-                #include "UnityCG.cginc"
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
 
-                struct appdata
+            struct v2f
+            {
+                float2 uv : TEXCOORD0;
+                float4 vertex : SV_POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct DamageInfo
+            {
+                float4 positionAndType; // xy = position, z = damage type, w = rotation
+                float scale;
+                float damage;
+            };
+
+            StructuredBuffer<DamageInfo> _DamageBuffer;
+            int _MaxDamageInstancesPerEnemy;
+
+            sampler2D _MainTex;
+            sampler2D _MidLayerTex;
+            sampler2D _BottomLayerTex;
+            sampler2D _DamageTex1;
+            sampler2D _DamageTex2;
+            sampler2D _DamageTex3;
+            float4 _MainTex_ST;
+            float4 _DamageLayerScale;
+
+            UNITY_INSTANCING_BUFFER_START(Props)
+                UNITY_DEFINE_INSTANCED_PROP(float, _EnemyID)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashIntensity)
+            UNITY_INSTANCING_BUFFER_END(Props)
+
+            float4 _FlashColor;
+
+            float extractYRotation(float4x4 mat)
+            {
+                return atan2(mat._m02, mat._m22);
+            }
+
+            float extractZRotation(float4x4 mat)
+            {
+                return atan2(mat._m01, mat._m00);
+            }
+
+            v2f vert(appdata v)
+            {
+                v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+
+                float3 scale = float3(
+                    length(unity_ObjectToWorld._m00_m10_m20),
+                    length(unity_ObjectToWorld._m01_m11_m21),
+                    length(unity_ObjectToWorld._m02_m12_m22)
+                );
+                float worldYRotation = extractYRotation(unity_ObjectToWorld);
+                float localZRotation = extractZRotation(unity_ObjectToWorld);
+                float cosZ = cos(localZRotation);
+                float sinZ = sin(localZRotation);
+                float3x3 localRotationMatrix = float3x3(
+                    cosZ, -sinZ, 0,
+                    sinZ, cosZ, 0,
+                    0, 0, 1
+                );
+
+                float3 worldPos = unity_ObjectToWorld._m03_m13_m23;
+                float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
+                float3 upDir = float3(0, 1, 0);
+                float3 rightDir = normalize(cross(upDir, viewDir));
+
+                worldYRotation = fmod(worldYRotation + 2 * UNITY_PI, 2 * UNITY_PI);
+                if (worldYRotation > UNITY_PI / 2 && worldYRotation < 3 * UNITY_PI / 2)
                 {
-                    float4 vertex : POSITION;
-                    float2 uv : TEXCOORD0;
-                    UNITY_VERTEX_INPUT_INSTANCE_ID
-                };
-
-                struct v2f
-                {
-                    float2 uv : TEXCOORD0;
-                    float4 vertex : SV_POSITION;
-                    UNITY_VERTEX_INPUT_INSTANCE_ID
-                };
-
-                struct DamageInfo
-                {
-                    float4 positionAndType; // xy = position, z = damage type, w = rotation
-                    float scale;
-                    float damage;
-                };
-
-                StructuredBuffer<DamageInfo> _DamageBuffer;
-                int _MaxDamageInstancesPerEnemy;
-
-                sampler2D _MainTex;
-                sampler2D _DamageTex1;
-                sampler2D _DamageTex2;
-                sampler2D _DamageTex3;
-                float4 _MainTex_ST;
-
-                UNITY_INSTANCING_BUFFER_START(Props)
-                    UNITY_DEFINE_INSTANCED_PROP(float, _EnemyID)
-                    UNITY_DEFINE_INSTANCED_PROP(float, _FlashIntensity)
-                UNITY_INSTANCING_BUFFER_END(Props)
-
-                float4 _FlashColor;
-
-                float extractYRotation(float4x4 mat)
-                {
-                    return atan2(mat._m02, mat._m22);
+                    rightDir = -rightDir;
                 }
+                upDir = normalize(cross(viewDir, rightDir));
 
-                float extractZRotation(float4x4 mat)
+                float3 vertexOffset = mul(localRotationMatrix, v.vertex.xyz * scale);
+                float3 worldOffset = rightDir * vertexOffset.x + upDir * vertexOffset.y + viewDir * vertexOffset.z;
+                float3 billboardPos = worldPos + worldOffset;
+
+                o.vertex = UnityWorldToClipPos(billboardPos);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                return o;
+            }
+
+            float2 rotateUV(float2 uv, float rotation)
+            {
+                float s = sin(rotation);
+                float c = cos(rotation);
+                float2 pivot = float2(0.5, 0.5);
+                return float2(
+                    c * (uv.x - pivot.x) - s * (uv.y - pivot.y) + pivot.x,
+                    s * (uv.x - pivot.x) + c * (uv.y - pivot.y) + pivot.y
+                );
+            }
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(i);
+                fixed4 topLayer = tex2D(_MainTex, i.uv);
+                fixed4 midLayer = tex2D(_MidLayerTex, i.uv);
+                fixed4 bottomLayer = tex2D(_BottomLayerTex, i.uv);
+                
+                float3 layerAlpha = float3(topLayer.a, midLayer.a, bottomLayer.a);
+
+                float enemyID = UNITY_ACCESS_INSTANCED_PROP(Props, _EnemyID);
+                int startIndex = enemyID * _MaxDamageInstancesPerEnemy;
+                for (int j = 0; j < _MaxDamageInstancesPerEnemy; j++)
                 {
-                    return atan2(mat._m01, mat._m00);
-                }
-
-                v2f vert(appdata v)
-                {
-                    v2f o;
-                    UNITY_SETUP_INSTANCE_ID(v);
-                    UNITY_TRANSFER_INSTANCE_ID(v, o);
-
-                    float3 scale = float3(
-                        length(unity_ObjectToWorld._m00_m10_m20),
-                        length(unity_ObjectToWorld._m01_m11_m21),
-                        length(unity_ObjectToWorld._m02_m12_m22)
-                    );
-                    float worldYRotation = extractYRotation(unity_ObjectToWorld);
-                    float localZRotation = extractZRotation(unity_ObjectToWorld);
-                    float cosZ = cos(localZRotation);
-                    float sinZ = sin(localZRotation);
-                    float3x3 localRotationMatrix = float3x3(
-                        cosZ, -sinZ, 0,
-                        sinZ, cosZ, 0,
-                        0, 0, 1
-                    );
-
-                    float3 worldPos = unity_ObjectToWorld._m03_m13_m23;
-                    float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-                    float3 upDir = float3(0, 1, 0);
-                    float3 rightDir = normalize(cross(upDir, viewDir));
-
-                    worldYRotation = fmod(worldYRotation + 2 * UNITY_PI, 2 * UNITY_PI);
-                    if (worldYRotation > UNITY_PI / 2 && worldYRotation < 3 * UNITY_PI / 2)
+                    DamageInfo damage = _DamageBuffer[startIndex + j];
+                    if (damage.damage > 0)
                     {
-                        rightDir = -rightDir;
-                    }
-                    upDir = normalize(cross(viewDir, rightDir));
+                        float2 damagePos = damage.positionAndType.xy;
+                        float damageType = damage.positionAndType.z;
+                        float damageRotation = damage.positionAndType.w;
+                        float damageScale = damage.scale;
 
-                    float3 vertexOffset = mul(localRotationMatrix, v.vertex.xyz * scale);
-                    float3 worldOffset = rightDir * vertexOffset.x + upDir * vertexOffset.y + viewDir * vertexOffset.z;
-                    float3 billboardPos = worldPos + worldOffset;
-
-                    o.vertex = UnityWorldToClipPos(billboardPos);
-                    o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                    return o;
-                }
-
-                float2 rotateUV(float2 uv, float rotation)
-                {
-                    float s = sin(rotation);
-                    float c = cos(rotation);
-                    float2 pivot = float2(0.5, 0.5);
-                    return float2(
-                        c * (uv.x - pivot.x) - s * (uv.y - pivot.y) + pivot.x,
-                        s * (uv.x - pivot.x) + c * (uv.y - pivot.y) + pivot.y
-                    );
-                }
-
-                fixed4 frag(v2f i) : SV_Target
-                {
-                    UNITY_SETUP_INSTANCE_ID(i);
-                    fixed4 col = tex2D(_MainTex, i.uv);
-                    float finalAlpha = col.a;
-
-                    float enemyID = UNITY_ACCESS_INSTANCED_PROP(Props, _EnemyID);
-                    int startIndex = enemyID * _MaxDamageInstancesPerEnemy;
-                    for (int j = 0; j < _MaxDamageInstancesPerEnemy; j++)
-                    {
-                        DamageInfo damage = _DamageBuffer[startIndex + j];
-                        if (damage.damage > 0)
+                        for (int layer = 0; layer < 3; layer++)
                         {
-                            float2 damagePos = damage.positionAndType.xy;
-                            float damageType = damage.positionAndType.z;
-                            float damageRotation = damage.positionAndType.w;
-                            float damageScale = damage.scale;
-
-                            float2 damageUV = (i.uv - damagePos) / damageScale;
+                            float layerDamageScale = damageScale * _DamageLayerScale[layer];
+                            float2 damageUV = (i.uv - damagePos) / layerDamageScale;
                             damageUV = rotateUV(damageUV, damageRotation);
 
                             if (all(damageUV >= 0 && damageUV <= 1))
@@ -153,19 +165,27 @@ Shader "Custom/2BillboardSpriteWithMultipleDamageTypesAndFlash_Instanced"
                                 else if (damageType == 1) damageAlpha = tex2D(_DamageTex2, damageUV).a;
                                 else damageAlpha = tex2D(_DamageTex3, damageUV).a;
 
-                                // Create a complete hole where damage is applied
-                                finalAlpha = min(finalAlpha, 1 - damageAlpha);
+                                // Create a hole where damage is applied, with decreasing effect on lower layers
+                                layerAlpha[layer] = min(layerAlpha[layer], 1 - damageAlpha);
                             }
                         }
                     }
-
-                    // Apply flash effect
-                    float flashIntensity = UNITY_ACCESS_INSTANCED_PROP(Props, _FlashIntensity);
-                    fixed3 flashedColor = lerp(col.rgb, _FlashColor.rgb, flashIntensity);
-
-                    return fixed4(flashedColor, finalAlpha);
                 }
-                ENDCG
+
+                // Blend layers
+                fixed3 finalColor = bottomLayer.rgb;
+                finalColor = lerp(finalColor, midLayer.rgb, layerAlpha[1]);
+                finalColor = lerp(finalColor, topLayer.rgb, layerAlpha[0]);
+
+                float finalAlpha = max(max(layerAlpha[0], layerAlpha[1]), layerAlpha[2]);
+
+                // Apply flash effect
+                float flashIntensity = UNITY_ACCESS_INSTANCED_PROP(Props, _FlashIntensity);
+                fixed3 flashedColor = lerp(finalColor, _FlashColor.rgb, flashIntensity);
+
+                return fixed4(flashedColor, finalAlpha);
             }
+            ENDCG
         }
+    }
 }

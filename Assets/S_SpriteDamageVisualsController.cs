@@ -9,18 +9,13 @@ public class S_SpriteDamageController : MonoBehaviour
     private BaseHealth healthComponent;
     [SerializeField] private float flashDuration = 0.2f;
     [SerializeField] private Color flashColor = Color.red;
-
-    // Gizmo settings
-    [SerializeField] private bool drawGizmos = true;
-    [SerializeField] private Color spriteBoundsColor = Color.yellow;
-    [SerializeField] private Color projectionColor = Color.green;
-    [SerializeField] private Color hitPositionColor = Color.red;
-    [SerializeField] private float gizmoLineWidth = 2f;
-
+    
     // Debug
     private Vector3 lastWorldHitPosition;
     private Vector2 lastProjectedPosition;
     [SerializeField] private Vector2 offsetAdjustment;
+    private static readonly int FlashIntensity = Shader.PropertyToID("_FlashIntensity");
+    private static readonly int EnemyID = Shader.PropertyToID("_EnemyID");
 
     void Start()
     {
@@ -41,9 +36,9 @@ public class S_SpriteDamageController : MonoBehaviour
         rendererComponent.GetPropertyBlock(propertyBlock);
 
         // Set instanced properties
-        propertyBlock.SetFloat("_EnemyID", enemyIndex);
+        propertyBlock.SetFloat(EnemyID, enemyIndex);
         //propertyBlock.SetColor("_FlashColor", flashColor);
-        propertyBlock.SetFloat("_FlashIntensity", 0f);
+        propertyBlock.SetFloat(FlashIntensity, 0f);
 
         rendererComponent.SetPropertyBlock(propertyBlock);
     }
@@ -74,15 +69,16 @@ public class S_SpriteDamageController : MonoBehaviour
         }
 
         // Get the sprite's world position and scale
-        Vector3 spriteWorldPosition = transform.position;
-        Vector3 spriteWorldScale = transform.lossyScale;
+        Transform myTransform = transform;
+        Vector3 spriteWorldPosition = myTransform.position;
+        Vector3 spriteWorldScale = myTransform.lossyScale;
 
         // Calculate the camera's right and up vectors
         Vector3 cameraRight = mainCamera.transform.right;
         Vector3 cameraUp = mainCamera.transform.up;
 
         // Apply the sprite's Z rotation
-        float zRotation = transform.rotation.eulerAngles.z;
+        float zRotation = myTransform.rotation.eulerAngles.z;
         Vector3 spriteRight = Quaternion.AngleAxis(zRotation, mainCamera.transform.forward) * cameraRight;
         Vector3 spriteUp = Quaternion.AngleAxis(zRotation, mainCamera.transform.forward) * cameraUp;
 
@@ -136,17 +132,12 @@ public class S_SpriteDamageController : MonoBehaviour
 
     private IEnumerator FlashRoutine()
     {
-        float elapsedTime = 0f;
-        while (elapsedTime < flashDuration)
-        {
-            float intensity = Mathf.PingPong(elapsedTime / flashDuration * 2, 1f);
-            propertyBlock.SetFloat("_FlashIntensity", intensity);
-            rendererComponent.SetPropertyBlock(propertyBlock);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-        // Ensure flash is turned off at the end
-        propertyBlock.SetFloat("_FlashIntensity", 0f);
+        propertyBlock.SetFloat(FlashIntensity, 1);
+        rendererComponent.SetPropertyBlock(propertyBlock);
+
+        yield return new WaitForSeconds(flashDuration);
+
+        propertyBlock.SetFloat(FlashIntensity, 0);
         rendererComponent.SetPropertyBlock(propertyBlock);
     }
 
@@ -161,25 +152,33 @@ public class S_SpriteDamageController : MonoBehaviour
         S_DamageManager.Instance.ReleaseEnemyIndex(enemyIndex);
     }
 
+    //I fear change; this may break again, and the holy gizmo will be needed once more
+    /*// Gizmo settings
+    [SerializeField] private bool drawGizmos = true;
+    [SerializeField] private Color spriteBoundsColor = Color.yellow;
+    [SerializeField] private Color projectionColor = Color.green;
+    [SerializeField] private Color hitPositionColor = Color.red;
+    [SerializeField] private float gizmoLineWidth = 2f;
+
     private void OnDrawGizmos()
     {
         if (!drawGizmos || !Application.isPlaying) return;
-
+    
         Camera mainCamera = Camera.main;
         if (mainCamera == null) return;
-
+    
         Vector3 spriteWorldPosition = transform.position;
         Vector3 spriteWorldScale = transform.lossyScale;
         Vector3 spriteRight = transform.right * spriteWorldScale.x;
         Vector3 spriteUp = transform.up * spriteWorldScale.y;
-
+    
         // Draw sprite bounds
         DrawRectangle(spriteWorldPosition, spriteRight, spriteUp, spriteBoundsColor);
-
+    
         // Draw hit position
         Gizmos.color = hitPositionColor;
         Gizmos.DrawSphere(lastWorldHitPosition, 0.05f);
-
+    
         // Draw projection
         Vector3 projectedWorldPosition = spriteWorldPosition +
             (spriteRight * (lastProjectedPosition.x - 0.5f)) +
@@ -187,27 +186,27 @@ public class S_SpriteDamageController : MonoBehaviour
         Gizmos.color = projectionColor;
         Gizmos.DrawLine(lastWorldHitPosition, projectedWorldPosition);
         Gizmos.DrawSphere(projectedWorldPosition, 0.05f);
-
+    
         // Draw camera forward
         Gizmos.color = Color.blue;
         Gizmos.DrawRay(mainCamera.transform.position, mainCamera.transform.forward * 10f);
     }
-
-
+    
+    
     private void DrawRectangle(Vector3 center, Vector3 right, Vector3 up, Color color)
     {
         Vector3 topLeft = center - (right / 2) + (up / 2);
         Vector3 topRight = center + (right / 2) + (up / 2);
         Vector3 bottomLeft = center - (right / 2) - (up / 2);
         Vector3 bottomRight = center + (right / 2) - (up / 2);
-
+    
         Gizmos.color = color;
         DrawLine(topLeft, topRight);
         DrawLine(topRight, bottomRight);
         DrawLine(bottomRight, bottomLeft);
         DrawLine(bottomLeft, topLeft);
     }
-
+    
     private void DrawLine(Vector3 from, Vector3 to)
     {
         Gizmos.DrawLine(from, to);
@@ -218,5 +217,5 @@ public class S_SpriteDamageController : MonoBehaviour
         {
             Gizmos.DrawLine(from + perpendicular * i, to + perpendicular * i);
         }
-    }
+    }*/
 }

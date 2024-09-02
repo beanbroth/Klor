@@ -7,6 +7,7 @@ public abstract class BaseEnemyMovementController : MonoBehaviour
 {
     [SerializeField] protected float moveSpeed = 3f;
     [SerializeField] protected float damageStunDuration = 0.1f;
+    [SerializeField] protected float destinationUpdateInterval = 0.3f;
     protected NavMeshAgent agent;
     protected Transform player;
     protected BaseHealth health;
@@ -30,22 +31,23 @@ public abstract class BaseEnemyMovementController : MonoBehaviour
             health.OnDeath += HandleDeath;
         }
         agent.speed = moveSpeed;
+        StartCoroutine(UpdateDestinationRoutine());
     }
 
     protected virtual void Update()
     {
-        if (!isDead && !isStunned)
-        {
-            MoveTowardsPlayer();
-        }
         UpdateWalkingState();
     }
 
-    protected virtual void MoveTowardsPlayer()
+    protected IEnumerator UpdateDestinationRoutine()
     {
-        if (player != null)
+        while (!isDead)
         {
-            agent.SetDestination(player.position);
+            if (!isStunned && player != null)
+            {
+                agent.SetDestination(player.position);
+            }
+            yield return new WaitForSeconds(destinationUpdateInterval);
         }
     }
 
@@ -62,9 +64,7 @@ public abstract class BaseEnemyMovementController : MonoBehaviour
         StopAllCoroutines();
         isDead = true;
         agent.isStopped = true;
-        //agent.enabled = false;
         SetWalkingState(false);
-        // Don't disable the entire component, as lunges should still finish
     }
 
     protected IEnumerator StunRoutine()

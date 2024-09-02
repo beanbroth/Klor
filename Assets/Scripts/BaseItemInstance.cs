@@ -91,7 +91,7 @@ public class BaseItemInstance : IRightClickable
 
     protected virtual void Sell()
     {
-        Debug.Log($"Selling {ItemData.itemName}");
+        Debug.Log($"Selling {ItemData.ItemName}");
 
         //TODO: Implement selling logic? prolly won't have time
     }

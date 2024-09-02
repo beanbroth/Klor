@@ -7,19 +7,21 @@ public class WorldItem : MonoBehaviour, IInteractable
     public BaseItemData itemData;
     public BaseItemInstance itemInstance;
     public TextMeshPro hoverText;
+    public Rigidbody rb;
     [SerializeField] private Renderer itemRenderer;
     [SerializeField] private Transform quadTransform;
-    [SerializeField] private Rigidbody rb;
-    [SerializeField] private float spawnForce = 5f;
-    [SerializeField] private float spawnTorque = 2f;
-
+    
     private MaterialPropertyBlock propertyBlock;
     private static readonly int MainTexProperty = Shader.PropertyToID("_MainTex");
 
+    private static ItemFactory itemFactory;
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
         propertyBlock = new MaterialPropertyBlock();
+        if (itemFactory == null)
+        {
+            itemFactory = new ItemFactory();
+        }
     }
 
     private void Start()
@@ -27,43 +29,63 @@ public class WorldItem : MonoBehaviour, IInteractable
         SetupItem();
     }
 
-    private void SetupItem()
+    public void SetupItem()
     {
-        hoverText.text = itemData.itemName;
+        hoverText.text = itemData.ItemName;
         hoverText.gameObject.SetActive(false);
 
-        if (itemRenderer != null && itemData.itemSprite != null)
+        if (itemRenderer != null && itemData.ItemSprite != null)
         {
             itemRenderer.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetTexture(MainTexProperty, itemData.itemSprite.texture);
+            propertyBlock.SetTexture(MainTexProperty, itemData.ItemSprite.texture);
             itemRenderer.SetPropertyBlock(propertyBlock);
         }
 
-        if (quadTransform != null && itemData.itemSprite != null)
+        if (quadTransform != null && itemData.ItemSprite != null)
         {
-            float aspectRatio = (float)itemData.itemSprite.texture.width / itemData.itemSprite.texture.height;
+            float aspectRatio = (float)itemData.ItemSprite.texture.width / itemData.ItemSprite.texture.height;
             quadTransform.localScale = new Vector3(aspectRatio, 1, 1);
         }
     }
-
-    public void Spawn(Vector3 spawnPosition, Vector3 spawnDirection)
-    {
-        transform.position = spawnPosition;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        rb.AddForce(spawnDirection.normalized * spawnForce, ForceMode.Impulse);
-        rb.AddTorque(Random.insideUnitSphere * spawnTorque, ForceMode.Impulse);
-    }
-
     public void Interact()
     {
+        Debug.Log($"Interact method called on {gameObject.name}");
+        Debug.Log($"ItemData type: {itemData.GetType().Name}");
+
         if (itemInstance == null)
         {
-            itemInstance = new BaseItemInstance(itemData, 0, 0);
+            Debug.Log("ItemInstance is null. Creating new instance...");
+            try
+            {
+                itemInstance = itemFactory.CreateItemInstance(itemData, 0, 0);
+                Debug.Log($"Successfully created ItemInstance of type: {itemInstance.GetType().Name}, with a data of type {itemInstance.ItemData.GetType().Name}");
+            }
+            catch (System.ArgumentException e)
+            {
+                Debug.LogError($"Failed to create ItemInstance: {e.Message}");
+                return;
+            }
         }
-        InventoryManager.Instance.AddItem(itemInstance);
+        else
+        {
+            Debug.Log($"Using existing ItemInstance of type: {itemInstance.GetType().Name}");
+        }
+
+        Debug.Log("Attempting to add item to inventory...");
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.AddItem(itemInstance);
+            Debug.Log("Item successfully added to inventory.");
+        }
+        else
+        {
+            Debug.LogError("InventoryManager.Instance is null. Unable to add item to inventory.");
+        }
+
+        Debug.Log($"Destroying ItemPickup GameObject: {gameObject.name}");
         Destroy(gameObject);
     }
+
 
     public void OnHoverEnter()
     {
