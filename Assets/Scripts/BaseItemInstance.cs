@@ -1,4 +1,6 @@
-public class BaseItemInstance
+using UnityEngine;
+
+public class BaseItemInstance : IRightClickable
 {
     public BaseItemData ItemData { get; private set; }
     public int GridX { get; private set; }
@@ -7,6 +9,8 @@ public class BaseItemInstance
     public int CurrentWidth { get; private set; }
     public int CurrentHeight { get; private set; }
     public bool[,] CurrentShape { get; private set; }
+
+    public string Name => ItemData.name;
 
     public BaseItemInstance(BaseItemData itemData, int x, int y)
     {
@@ -70,6 +74,33 @@ public class BaseItemInstance
             }
         }
     }
+
+    public virtual void OnRightClick(InventoryContext context)
+    {
+        switch (context)
+        {
+            case InventoryContext.Shop:
+                Sell();
+                break;
+            case InventoryContext.Default:
+                PerformDefaultRightClickAction();
+                break;
+                // Add more cases for other contexts as needed
+        }
+    }
+
+    protected virtual void Sell()
+    {
+        Debug.Log($"Selling {ItemData.itemName}");
+
+        //TODO: Implement selling logic? prolly won't have time
+    }
+
+    protected virtual void PerformDefaultRightClickAction()
+    {
+        // Default implementation (do nothing)
+        // Child classes will override this method if they have a specific action
+    }
 }
 
 public enum RotationState
@@ -78,4 +109,16 @@ public enum RotationState
     Rotation90,
     Rotation180,
     Rotation270
+}
+
+public interface IRightClickable
+{
+    void OnRightClick(InventoryContext context);
+}
+
+public enum InventoryContext
+{
+    Default,
+    Shop,
+    // Add more contexts as needed
 }

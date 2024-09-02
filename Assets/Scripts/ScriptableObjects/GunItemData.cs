@@ -18,6 +18,11 @@ public class GunItemData : BaseItemData
 
     [Header("Attachment Slots")]
     public List<AttachmentSlot> attachmentSlots = new List<AttachmentSlot>();
+
+    public override BaseItemInstance CreateInstance(int x, int y)
+    {
+        return new GunInstance(this, x, y);
+    }
 }
 
 [System.Serializable]

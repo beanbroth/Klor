@@ -1,95 +1,70 @@
-Shader "Custom/BillboardSprite"
+Shader "Unlit/Billboard"
 {
-    Properties
-    {
-        _MainTex("Sprite Texture", 2D) = "white" {}
-    }
-        SubShader
-    {
-        Tags {"Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent"}
-        LOD 100
+	Properties
+	{
+		_MainTex("Texture", 2D) = "white" {}
+	}
+		SubShader
+	{
 
-        ZWrite Off
-        Blend SrcAlpha OneMinusSrcAlpha
-        Cull Off
+		Tags{ "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" "DisableBatching" = "False" }
 
-        Pass
-        {
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            #include "UnityCG.cginc"
+		ZWrite Off
+		Blend SrcAlpha OneMinusSrcAlpha
 
-            struct appdata
-            {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
-            };
+		Pass
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			// make fog work
+			#pragma multi_compile_fog
 
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                float4 vertex : SV_POSITION;
-            };
+			#include "UnityCG.cginc"
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
+			struct appdata
+			{
+				float4 vertex : POSITION;
+				float2 uv : TEXCOORD0;
+			};
 
-            float extractYRotation(float4x4 mat)
-            {
-                return atan2(mat._m02, mat._m22);
-            }
+			struct v2f
+			{
+				float2 uv : TEXCOORD0;
+				UNITY_FOG_COORDS(1)
+				float4 pos : SV_POSITION;
+			};
 
-            float extractZRotation(float4x4 mat)
-            {
-                return atan2(mat._m01, mat._m00);
-            }
+			sampler2D _MainTex;
+			float4 _MainTex_ST;
 
-            v2f vert(appdata v)
-            {
-                v2f o;
-                float3 scale = float3(
-                    length(unity_ObjectToWorld._m00_m10_m20),
-                    length(unity_ObjectToWorld._m01_m11_m21),
-                    length(unity_ObjectToWorld._m02_m12_m22)
-                );
-                float worldYRotation = extractYRotation(unity_ObjectToWorld);
-                float localZRotation = extractZRotation(unity_ObjectToWorld);
-                float cosZ = cos(localZRotation);
-                float sinZ = sin(localZRotation);
-                float3x3 localRotationMatrix = float3x3(
-                    cosZ, -sinZ, 0,
-                    sinZ, cosZ, 0,
-                    0, 0, 1
-                );
+			v2f vert(appdata v)
+			{
+				v2f o;
+				o.pos = UnityObjectToClipPos(v.vertex);
+				o.uv = v.uv.xy;
 
-                float3 worldPos = unity_ObjectToWorld._m03_m13_m23;
-                float3 viewDir = normalize(UnityWorldSpaceViewDir(worldPos));
-                float3 upDir = float3(0, 1, 0);
-                float3 rightDir = normalize(cross(upDir, viewDir));
+				// billboard mesh towards camera
+				float3 vpos = mul((float3x3)unity_ObjectToWorld, v.vertex.xyz);
+				float4 worldCoord = float4(unity_ObjectToWorld._m03, unity_ObjectToWorld._m13, unity_ObjectToWorld._m23, 1);
+				float4 viewPos = mul(UNITY_MATRIX_V, worldCoord) + float4(vpos, 0);
+				float4 outPos = mul(UNITY_MATRIX_P, viewPos);
 
-                worldYRotation = fmod(worldYRotation + 2 * UNITY_PI, 2 * UNITY_PI);
-                if (worldYRotation > UNITY_PI / 2 && worldYRotation < 3 * UNITY_PI / 2)
-                {
-                    rightDir = -rightDir;
-                }
-                upDir = normalize(cross(viewDir, rightDir));
+				o.pos = outPos;
 
-                float3 vertexOffset = mul(localRotationMatrix, v.vertex.xyz * scale);
-                float3 worldOffset = rightDir * vertexOffset.x + upDir * vertexOffset.y + viewDir * vertexOffset.z;
-                float3 billboardPos = worldPos + worldOffset;
+				UNITY_TRANSFER_FOG(o,o.pos);
+				return o;
+			}
 
-                o.vertex = UnityWorldToClipPos(billboardPos);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                return o;
-            }
-
-            fixed4 frag(v2f i) : SV_Target
-            {
-                fixed4 col = tex2D(_MainTex, i.uv);
-                return col;
-            }
-            ENDCG
-        }
-    }
+			fixed4 frag(v2f i) : SV_Target
+			{
+				// sample the texture
+				fixed4 col = tex2D(_MainTex, i.uv);
+			// apply fog
+			UNITY_APPLY_FOG(i.fogCoord, col);
+			return col;
+		}
+		ENDCG
+	}
+	}
 }

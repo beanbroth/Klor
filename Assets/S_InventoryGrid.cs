@@ -166,6 +166,10 @@ public class S_InventoryGrid : MonoBehaviour, IItemInventory
             return true;
         }
 
+        //return the item to its original position, with a rotation that fits. It's brute force, but works.
+
+        gridLogic.RotateObjectToFit(item);
+
         ClearHighlight();
         return false;
     }

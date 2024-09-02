@@ -56,6 +56,7 @@ public class ItemView : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDr
         itemImage.sprite = Item.ItemData.itemSprite;
         CreateShapeOutline();
         itemImageObject.transform.SetAsLastSibling();
+        itemImageObject.transform.rotation = Quaternion.Euler(0, 0, -90 * (int)Item.CurrentRotation);
     }
 
     private void CreateShapeOutline()

@@ -6,7 +6,6 @@ public class S_MeshAnimation : MonoBehaviour
     [SerializeField] private float stepFrequency = 2f;
     [SerializeField] private float bobAmplitude = 0.1f;
     [SerializeField] private float bobFrequency = 2f;
-
     private Vector3 initialPosition;
     private float bobOffset;
     private float stepOffset;
@@ -14,21 +13,25 @@ public class S_MeshAnimation : MonoBehaviour
     private BaseEnemyMovementController enemyMovement;
     private S_EnemyHealth enemyHealth;
 
+    // New variables for random offsets
+    private float randomTimeOffset;
+
     void Start()
     {
         initialPosition = transform.localPosition;
         enemyMovement = GetComponentInParent<BaseEnemyMovementController>();
         enemyHealth = GetComponentInParent<S_EnemyHealth>();
-
         if (enemyMovement != null)
         {
             enemyMovement.OnWalkingStateChanged += HandleWalkingStateChanged;
         }
-
         if (enemyHealth != null)
         {
             enemyHealth.OnDeath += HandleEnemyDeath;
         }
+
+        // Generate a random time offset
+        randomTimeOffset = Random.Range(0f, 2f * Mathf.PI);
     }
 
     void OnDestroy()
@@ -37,7 +40,6 @@ public class S_MeshAnimation : MonoBehaviour
         {
             enemyMovement.OnWalkingStateChanged -= HandleWalkingStateChanged;
         }
-
         if (enemyHealth != null)
         {
             enemyHealth.OnDeath -= HandleEnemyDeath;
@@ -59,13 +61,13 @@ public class S_MeshAnimation : MonoBehaviour
 
     private void UpdateStep()
     {
-        stepOffset = Mathf.Sin(Time.time * stepFrequency) * stepAngle;
+        stepOffset = Mathf.Sin((Time.time + randomTimeOffset) * stepFrequency) * stepAngle;
         transform.localRotation = Quaternion.Euler(0, 0, stepOffset);
     }
 
     private void UpdateBob()
     {
-        bobOffset = Mathf.Abs(Mathf.Sin(Time.time * bobFrequency)) * bobAmplitude;
+        bobOffset = Mathf.Abs(Mathf.Sin((Time.time + randomTimeOffset) * bobFrequency)) * bobAmplitude;
         transform.localPosition = initialPosition + new Vector3(0, bobOffset, 0);
     }
 

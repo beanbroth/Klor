@@ -8,6 +8,8 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
     [SerializeField] private RectTransform rectTransform;
     [SerializeField] private Image slotImage;
 
+    public RectTransform RectTransform => rectTransform;
+
     private BaseItemInstance currentItem;
 
     public void ManualAwake()
@@ -18,7 +20,7 @@ public class EquipmentSlot : MonoBehaviour, IItemInventory
 
     public bool CanAcceptItem(BaseItemInstance item)
     {
-        // TODO: Implement proper checking based on item type and slot type
+        // TODO: Implement proper checking based on item type and slot type. For now just make sure the slot is empty.
         return currentItem == null;
     }
 

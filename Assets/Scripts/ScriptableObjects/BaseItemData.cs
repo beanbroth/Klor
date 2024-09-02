@@ -1,9 +1,8 @@
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "New BaseItemData", menuName = "Inventory/BaseItemData")]
-public class BaseItemData : ScriptableObject
+public abstract class BaseItemData : ScriptableObject
 {
     public string itemName;
     public Sprite itemSprite;
@@ -65,5 +64,6 @@ public class BaseItemData : ScriptableObject
     public int Width => width;
     public int Height => height;
 
+    public abstract BaseItemInstance CreateInstance(int x, int y);
 
 }

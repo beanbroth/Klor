@@ -9,16 +9,17 @@ public class WorldItem : MonoBehaviour, IInteractable
     public TextMeshPro hoverText;
     [SerializeField] private Renderer itemRenderer;
     [SerializeField] private Transform quadTransform;
-
-    //:D :D :D
     [SerializeField] private Rigidbody rb;
-
     [SerializeField] private float spawnForce = 5f;
     [SerializeField] private float spawnTorque = 2f;
+
+    private MaterialPropertyBlock propertyBlock;
+    private static readonly int MainTexProperty = Shader.PropertyToID("_MainTex");
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        propertyBlock = new MaterialPropertyBlock();
     }
 
     private void Start()
@@ -33,7 +34,9 @@ public class WorldItem : MonoBehaviour, IInteractable
 
         if (itemRenderer != null && itemData.itemSprite != null)
         {
-            itemRenderer.material.mainTexture = itemData.itemSprite.texture;
+            itemRenderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetTexture(MainTexProperty, itemData.itemSprite.texture);
+            itemRenderer.SetPropertyBlock(propertyBlock);
         }
 
         if (quadTransform != null && itemData.itemSprite != null)
@@ -48,7 +51,6 @@ public class WorldItem : MonoBehaviour, IInteractable
         transform.position = spawnPosition;
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-
         rb.AddForce(spawnDirection.normalized * spawnForce, ForceMode.Impulse);
         rb.AddTorque(Random.insideUnitSphere * spawnTorque, ForceMode.Impulse);
     }

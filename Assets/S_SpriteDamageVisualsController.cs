@@ -17,11 +17,9 @@ public class S_SpriteDamageController : MonoBehaviour
     [SerializeField] private Color hitPositionColor = Color.red;
     [SerializeField] private float gizmoLineWidth = 2f;
 
-
     // Debug
     private Vector3 lastWorldHitPosition;
     private Vector2 lastProjectedPosition;
-    //TODO: Why does this have to exist? Potentially due to camera vs gun offset, but not sure. Investigate.
     [SerializeField] private Vector2 offsetAdjustment;
 
     void Start()
@@ -37,13 +35,16 @@ public class S_SpriteDamageController : MonoBehaviour
         // Subscribe to events
         healthComponent.OnDamageTaken += HandleDamageTaken;
         healthComponent.OnDeath += HandleDeath;
+
+        // Initialize MaterialPropertyBlock
         propertyBlock = new MaterialPropertyBlock();
         rendererComponent.GetPropertyBlock(propertyBlock);
+
+        // Set instanced properties
         propertyBlock.SetFloat("_EnemyID", enemyIndex);
-        rendererComponent.SetPropertyBlock(propertyBlock);
-        // Set initial flash color and intensity
-        propertyBlock.SetColor("_FlashColor", flashColor);
+        //propertyBlock.SetColor("_FlashColor", flashColor);
         propertyBlock.SetFloat("_FlashIntensity", 0f);
+
         rendererComponent.SetPropertyBlock(propertyBlock);
     }
 
@@ -113,6 +114,7 @@ public class S_SpriteDamageController : MonoBehaviour
         );
     }
 
+
     private Vector2 GetRotationAdjustedOffset(float zRotation)
     {
         // Normalize the rotation to 0-360 range
@@ -138,7 +140,7 @@ public class S_SpriteDamageController : MonoBehaviour
         while (elapsedTime < flashDuration)
         {
             float intensity = Mathf.PingPong(elapsedTime / flashDuration * 2, 1f);
-            propertyBlock.SetFloat("_FlashIntensity", 1);
+            propertyBlock.SetFloat("_FlashIntensity", intensity);
             rendererComponent.SetPropertyBlock(propertyBlock);
             elapsedTime += Time.deltaTime;
             yield return null;

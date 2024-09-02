@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using static UnityEditor.Progress;
 
 public class InventoryGridLogic
 {
@@ -91,6 +92,37 @@ public class InventoryGridLogic
 
                 item.Rotate();
             }
+        }
+        return false;
+    }
+
+    //don't change the position, just rotate the item in place to fit
+    public bool RotateObjectToFit(BaseItemInstance item)
+    {
+
+        for (int r = 0; r < 4; r++) // Try all 4 possible rotations
+        {
+            Debug.Log(item.GridX + item.GridY);
+            if (CanPlaceItem(item, item.GridX, item.GridY, item))
+            {
+                return true;
+            }
+            item.Rotate();
+        }
+        return false;
+
+    }
+
+    public bool PlaceItemWithAnyRotation(BaseItemInstance item, int x, int y)
+    {
+        for (int r = 0; r < 4; r++) // Try all 4 possible rotations
+        {
+            if (CanPlaceItem(item, x, y))
+            {
+                PlaceItem(item, x, y);
+                return true;
+            }
+            item.Rotate();
         }
         return false;
     }
