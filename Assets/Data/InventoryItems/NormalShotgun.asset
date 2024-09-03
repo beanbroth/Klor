@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5b3fc0a53c8ad04fbfa30a3e4b3a4b5, type: 3}
   m_Name: NormalShotgun
   m_EditorClassIdentifier: 
-  itemName: Bossman
+  itemName: Regular Shotgun
   itemSprite: {fileID: 21300000, guid: 1c773878db91ffd40aea30eb5d7c4cb0, type: 3}
   equipmentSlotType: 4
   width: 4
   height: 2
-  shapeData: 0101010101010000
-  prefab: {fileID: 6121278318839902424, guid: 109b7a4458093d14bbf035826ea6e032, type: 3}
+  shapeData: 0101010101010101
+  prefab: {fileID: 8500077773593240857, guid: 112e2ff05d1a2ee4d9f21c3b0a312235, type: 3}
   maxDurability: 100
   damage: 5
   fireRate: 1

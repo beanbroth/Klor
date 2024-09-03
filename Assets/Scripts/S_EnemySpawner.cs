@@ -1,6 +1,9 @@
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
+using Random = UnityEngine.Random;
 
 public class EnemySpawner : MonoBehaviour
 {
@@ -15,15 +18,37 @@ public class EnemySpawner : MonoBehaviour
     public int dangerBudget = 10;
     public float spawnRadius = 10f;
     public int maxSpawnAttempts = 30;
+    public bool useDelayedSpawning = false; // Toggle for delayed spawning
+    public float spawnDelay = 0.5f; // Delay between spawns in seconds
 
     private void Start()
     {
-        SpawnEnemies();
+        SpawnEnemies(dangerBudget);
     }
 
-    public void SpawnEnemies()
+    private void Update()
     {
-        int remainingBudget = dangerBudget;
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            SpawnEnemies(500);
+        }
+    }
+
+    public void SpawnEnemies(int db)
+    {
+        if (useDelayedSpawning)
+        {
+            StartCoroutine(SpawnEnemiesWithDelay(db));
+        }
+        else
+        {
+            SpawnEnemiesImmediate(db);
+        }
+    }
+
+    private void SpawnEnemiesImmediate(int numEnemies)
+    {
+        int remainingBudget = numEnemies;
 
         while (remainingBudget > 0 && enemyTypes.Count > 0)
         {
@@ -42,7 +67,30 @@ public class EnemySpawner : MonoBehaviour
                 break;
             }
         }
-        
+    }
+
+    private IEnumerator SpawnEnemiesWithDelay(int db)
+    {
+        int remainingBudget = db;
+
+        while (remainingBudget > 0 && enemyTypes.Count > 0)
+        {
+            EnemyType selectedEnemy = enemyTypes[Random.Range(0, enemyTypes.Count)];
+
+            if (selectedEnemy.dangerValue <= remainingBudget)
+            {
+                if (SpawnEnemy(selectedEnemy))
+                {
+                    remainingBudget -= selectedEnemy.dangerValue;
+                    yield return new WaitForSeconds(spawnDelay);
+                }
+            }
+            else
+            {
+                // If we can't afford any more enemies, break the loop
+                break;
+            }
+        }
     }
 
     private bool SpawnEnemy(EnemyType enemyType)

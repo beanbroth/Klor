@@ -92,6 +92,8 @@ public class ItemView : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDr
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             isDragging = true;
+             
+            transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);
             originalPosition = rectTransform.anchoredPosition;
             canvasGroup.alpha = 0.6f;
             canvasGroup.blocksRaycasts = false;
@@ -103,6 +105,7 @@ public class ItemView : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDr
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        transform.localScale = Vector3.one;
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             OnEndDrag(eventData);
@@ -143,6 +146,8 @@ public class ItemView : MonoBehaviour, IPointerDownHandler, IDragHandler, IEndDr
         {
             isDragging = false;
             canvasGroup.alpha = 1f;
+            
+            
             canvasGroup.blocksRaycasts = true;
 
             if (inventoryManager.HandleItemDrop(Item, eventData.position))

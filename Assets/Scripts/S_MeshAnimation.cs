@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class S_MeshAnimation : MonoBehaviour
 {
@@ -6,6 +7,7 @@ public class S_MeshAnimation : MonoBehaviour
     [SerializeField] private float stepFrequency = 2f;
     [SerializeField] private float bobAmplitude = 0.1f;
     [SerializeField] private float bobFrequency = 2f;
+    [SerializeField] private float scaleUpDuration = 0.3f; // Duration of scale-up animation
     private Vector3 initialPosition;
     private float bobOffset;
     private float stepOffset;
@@ -13,12 +15,14 @@ public class S_MeshAnimation : MonoBehaviour
     private BaseEnemyMovementController enemyMovement;
     private S_EnemyHealth enemyHealth;
 
-    // New variables for random offsets
+    // New variables for random offsets and scaling
     private float randomTimeOffset;
+    private Vector3 initialScale;
 
     void Start()
     {
         initialPosition = transform.localPosition;
+        initialScale = transform.localScale;
         enemyMovement = GetComponentInParent<BaseEnemyMovementController>();
         enemyHealth = GetComponentInParent<S_EnemyHealth>();
         if (enemyMovement != null)
@@ -32,6 +36,9 @@ public class S_MeshAnimation : MonoBehaviour
 
         // Generate a random time offset
         randomTimeOffset = Random.Range(0f, 2f * Mathf.PI);
+
+        // Start the scale-up animation
+        StartCoroutine(ScaleUpAnimation());
     }
 
     void OnDestroy()
@@ -87,5 +94,21 @@ public class S_MeshAnimation : MonoBehaviour
         isWalking = false;
         ResetAnimation();
         this.enabled = false; // Disable this component
+    }
+
+    private IEnumerator ScaleUpAnimation()
+    {
+        float elapsedTime = 0f;
+        transform.localScale = Vector3.zero; // Start from zero scale
+
+        while (elapsedTime < scaleUpDuration)
+        {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / scaleUpDuration;
+            transform.localScale = Vector3.Lerp(Vector3.zero, initialScale, t);
+            yield return null;
+        }
+
+        transform.localScale = initialScale; // Ensure we end at the exact initial scale
     }
 }

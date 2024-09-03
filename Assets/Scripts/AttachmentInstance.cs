@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-public class AttachmentInstance : BaseItemInstance
+﻿public class AttachmentInstance : BaseItemInstance
 {
     public AttachmentInstance(AttachmentItemData itemData, int x, int y) : base(itemData, x, y)
     {

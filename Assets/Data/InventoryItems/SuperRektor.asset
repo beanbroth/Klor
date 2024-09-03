@@ -10,23 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5b3fc0a53c8ad04fbfa30a3e4b3a4b5, type: 3}
-  m_Name: BossMan
+  m_Name: SuperRektor
   m_EditorClassIdentifier: 
-  itemName: Bossman
-  itemSprite: {fileID: 21300000, guid: 1c773878db91ffd40aea30eb5d7c4cb0, type: 3}
+  itemName: SuperRektor
+  itemSprite: {fileID: 21300000, guid: ef55f050458584b448d40ba8d68b23f6, type: 3}
   equipmentSlotType: 4
-  width: 3
+  width: 5
   height: 2
-  shapeData: 010101010101
+  shapeData: 01010101010101010101
   prefab: {fileID: 6121278318839902424, guid: 7146c0a6862b43e46bef859a16bb0f37, type: 3}
   maxDurability: 100
   damage: 114.1
-  fireRate: 6.23
+  fireRate: 12.82
   isAutomatic: 1
   bulletSpeed: 120
-  inaccuracy: 20
+  inaccuracy: 3
   recoilPerShot: 1
-  bulletsPerShot: 17
+  bulletsPerShot: 1
   ammoCapacity: 100000
   bulletPrefab: {fileID: 1000719039445856164, guid: 9806a8d587ff1c54d92f990181ef9415,
     type: 3}

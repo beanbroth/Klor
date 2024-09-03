@@ -4,7 +4,8 @@ using System.Collections.Generic;
 [CreateAssetMenu(fileName = "New GunItemData", menuName = "Inventory/GunItemData")]
 public class GunItemData : BaseItemData
 {
-    [Header("Gun Properties")]
+    [Space(10)]
+    [Header("Gun Specific Data")]
     public GameObject prefab;
     public float maxDurability = 100f;
     public float damage = 10f;

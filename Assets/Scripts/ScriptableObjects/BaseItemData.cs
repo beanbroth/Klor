@@ -1,10 +1,10 @@
-using System;
 using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "New BaseItemData", menuName = "Inventory/BaseItemData")]
 public abstract class BaseItemData : ScriptableObject
 {
+    [Header("Basic Item Data")]
     [SerializeField] private string itemName;
     [SerializeField] private Sprite itemSprite;
     [SerializeField] private EquipmentSlotType equipmentSlotType;

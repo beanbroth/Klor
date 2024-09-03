@@ -8,6 +8,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4600114309013223776, guid: 112e2ff05d1a2ee4d9f21c3b0a312235,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 248682dc029a1d24f924c752567265fb, type: 2}
     - target: {fileID: 5299106776193831463, guid: 112e2ff05d1a2ee4d9f21c3b0a312235,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -61,7 +66,7 @@ PrefabInstance:
     - target: {fileID: 8500077773593240857, guid: 112e2ff05d1a2ee4d9f21c3b0a312235,
         type: 3}
       propertyPath: m_Name
-      value: BaseGunBody
+      value: BossmanBody
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

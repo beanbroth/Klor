@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 public class ItemSprinkler : MonoBehaviour
 {
@@ -9,9 +8,15 @@ public class ItemSprinkler : MonoBehaviour
     public float spreadAngle = 30f;
     public WorldItem worldItemPrefab;
     private float timer;
+    private bool shouldSpawn = false;
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            shouldSpawn = !shouldSpawn;
+        }
+        if(!shouldSpawn) return;
         timer += Time.deltaTime;
         if (timer >= spawnInterval)
         {

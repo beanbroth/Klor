@@ -34,6 +34,10 @@ public class InventoryManager : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!_instance)
+        {
+            ManualAwake();
+        }
         RefreshAllItemViews();
     }
     
