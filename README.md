@@ -1,7 +1,8 @@
 
-![klorlogo](https://github.com/user-attachments/assets/9f40e787-c23b-4fe9-a31d-18c43d386229)
+![goblinkyChibii](https://github.com/user-attachments/assets/8112ff7d-c836-4160-b782-81925c151f1c)
+ 
  # Welcome to Klor, a 3.5 day Sulfur technical study!
-
+ 
 https://github.com/user-attachments/assets/2bd5c51a-14fe-40b5-844c-87c9578e9e5f
 
 Over this weekened my goal was to reproduce iconic Sulfur features, and discover useful optomizations along the way. Sulfur is systemically mind boggling and awesome, which draws me to it. While developing the core features, I focused especailly on the grid inventory and making a shader for mass goblin murder.
